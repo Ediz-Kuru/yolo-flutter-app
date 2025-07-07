@@ -1,5 +1,7 @@
 // Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:ultralytics_yolo/yolo_result.dart';
 import 'package:ultralytics_yolo/yolo_view.dart';
@@ -614,7 +616,8 @@ class _CameraInferenceScreenState extends State<CameraInferenceScreen> {
       // Use ModelManager to get the model path
       // This will automatically download if not found locally
       final modelPath = await _modelManager.getModelPath(_selectedModel);
-
+      final copiedSize = await File(modelPath!).length();
+      print('✅ Copied model size: $copiedSize bytes');
       if (mounted) {
         setState(() {
           _modelPath = modelPath;

@@ -1,0 +1,31 @@
+description: Ultralytics YOLO11n-cls model trained on Dataset_Feuilles/dataset
+author: Ultralytics
+date: '2025-07-05T15:25:39.740558'
+version: 8.3.151
+license: AGPL-3.0 License (https://ultralytics.com/license)
+docs: https://docs.ultralytics.com
+stride: 1
+task: classify
+batch: 1
+imgsz:
+- 640
+- 640
+names:
+  0: Alternaria leaf spot
+  1: Bacterial Blight
+  2: Brown spot
+  3: Gray spot
+  4: Healthy Leaf
+  5: Leaf Hopper Jassids
+  6: Leaf Redding
+  7: Leaf Variegation
+  8: Rust
+  9: Yellowing
+  10: none
+args:
+  batch: 1
+  fraction: 1.0
+  half: false
+  int8: false
+  nms: false
+channels: 3

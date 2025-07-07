@@ -8,7 +8,7 @@ import 'package:ultralytics_yolo/yolo_task.dart';
 /// - {task} indicates the specific task (detect, segment, classify, pose, obb)
 enum ModelType {
   /// Object detection model
-  detect('yolo11n', YOLOTask.detect),
+  detect('best_float32', YOLOTask.detect),
 
   /// Instance segmentation model
   segment('yolo11n-seg', YOLOTask.segment),
