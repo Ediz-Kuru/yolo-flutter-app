@@ -6,7 +6,6 @@ import 'package:ultralytics_yolo/yolo_streaming_config.dart';
 import 'package:ultralytics_yolo/yolo_view.dart';
 
 void main() => runApp(const YOLODemo());
-
 class YOLODemo extends StatefulWidget {
   const YOLODemo({super.key});
 
@@ -42,37 +41,21 @@ class _YOLODemoState extends State<YOLODemo> {
     await classifier.loadModel();
     setState(() => _isLoading = false);
   }
-
   /// Processes a single frame from the camera stream.
   Future<void> _processFrame(Uint8List imageData) async {
-    if (_isProcessingFrame) return;
-
+    if(_isProcessingFrame) return;
     _isProcessingFrame = true;
     _stopwatch.reset();
     _stopwatch.start();
-
-    try {
-      final results = await classifier.predict(imageData).timeout(
-        const Duration(milliseconds: 500),
-      );
-
-      _stopwatch.stop();
-
+    final results = await classifier.predict(imageData);
+    _stopwatch.stop();
       if (mounted) {
         setState(() {
           _classificationResults = results['detections'] ?? [];
           _processingTimeMs = _stopwatch.elapsedMilliseconds;
         });
       }
-    } on TimeoutException {
-      _stopwatch.stop();
-      print("Frame processing timed out.");
-    } catch (e) {
-      _stopwatch.stop();
-      print("Error processing frame: $e");
-    } finally {
-      _isProcessingFrame = false;
-    }
+    _isProcessingFrame = false;
   }
 
   // Define a YOLOViewController to interact with the view if needed.
