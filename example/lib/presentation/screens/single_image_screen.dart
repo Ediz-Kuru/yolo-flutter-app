@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:archive/archive_io.dart';
+import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,12 +25,18 @@ class SingleImageScreen extends StatefulWidget {
 class _SingleImageScreenState extends State<SingleImageScreen> {
   final _picker = ImagePicker();
   List<Map<String, dynamic>> _detections = [];
+  List<Map<String, dynamic>> _classifications = [];
   Uint8List? _imageBytes;
   Uint8List? _annotatedImage;
 
   late YOLO _yolo;
+  final YOLO _classifier = YOLO(
+    modelPath: "yolo11n-cls",
+    task: YOLOTask.classify,
+    useMultiInstance: true,
+  );
   String _modelPathForYOLO =
-      'yolo11n-seg'; // Default asset path for non-iOS or if local copy fails
+      'yolo11n'; // Default asset path for non-iOS or if local copy fails
   bool _isModelReady = false;
 
   // Name of the .mlpackage directory in local storage (after unzipping)
@@ -69,10 +76,15 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
       }
     }
 
-    _yolo = YOLO(modelPath: _modelPathForYOLO, task: YOLOTask.segment);
+    _yolo = YOLO(
+      modelPath: _modelPathForYOLO,
+      task: YOLOTask.detect,
+      useMultiInstance: true,
+    );
 
     try {
       await _yolo.loadModel();
+      await _classifier.loadModel();
       if (mounted) {
         setState(() {
           _isModelReady = true;
@@ -230,18 +242,26 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
     if (file == null) return;
 
     final bytes = await file.readAsBytes();
-    final result = await _yolo.predict(bytes);
+    final detectionResults = await _yolo.predict(bytes);
+    final classificationResults = await _classifier.predict(bytes);
     if (mounted) {
       setState(() {
-        if (result.containsKey('boxes') && result['boxes'] is List) {
-          _detections = List<Map<String, dynamic>>.from(result['boxes']);
+        if (detectionResults.containsKey('boxes') &&
+            detectionResults['boxes'] is List) {
+          _detections = List<Map<String, dynamic>>.from(
+            detectionResults['boxes'],
+          );
+          _classifications = List<Map<String, dynamic>>.from(
+            classificationResults['detections'],
+          );
         } else {
           _detections = [];
+          _classifications = [];
         }
 
-        if (result.containsKey('annotatedImage') &&
-            result['annotatedImage'] is Uint8List) {
-          _annotatedImage = result['annotatedImage'] as Uint8List;
+        if (detectionResults.containsKey('annotatedImage') &&
+            detectionResults['annotatedImage'] is Uint8List) {
+          _annotatedImage = detectionResults['annotatedImage'] as Uint8List;
         } else {
           _annotatedImage = null;
         }
@@ -301,7 +321,14 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                     SizedBox(
                       height: 300,
                       width: double.infinity,
-                      child: Image.memory(_annotatedImage!),
+                      //child: Image.memory(_annotatedImage!),
+                      child: GestureDetector(
+                        onTap: () {
+                          showImageViewer(context, MemoryImage(_annotatedImage!),
+                              swipeDismissible: false);
+                        },
+                        child: Image.memory(_annotatedImage!),
+                      ),
                     )
                   else if (_imageBytes != null)
                     SizedBox(
@@ -312,6 +339,8 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                   const SizedBox(height: 10),
                   const Text('Detections:'),
                   Text(_detections.toString()),
+                  const Text('Classifications:'),
+                  Text(_classifications.toString()),
                 ],
               ),
             ),

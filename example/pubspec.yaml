@@ -9,6 +9,7 @@ environment:
   flutter: ">=3.32.1"
 
 dependencies:
+  easy_image_viewer: ^1.5.1
   flutter:
     sdk: flutter
   flutter_launcher_icons: ^0.14.4
