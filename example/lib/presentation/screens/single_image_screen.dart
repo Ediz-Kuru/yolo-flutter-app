@@ -337,10 +337,31 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                       child: Image.memory(_imageBytes!),
                     ),
                   const SizedBox(height: 10),
+
                   const Text('Detections:'),
-                  Text(_detections.toString()),
+                  ..._detections.map((d) {
+                    final rawName = d['className'] ?? d['class'] ?? 'Unknown';
+                    final className = rawName.toString(); // on le force à String
+                    final confidence = d['confidence'] != null
+                        ? (d['confidence'] * 100).toStringAsFixed(1)
+                        : '?';
+                    return Text('$className ($confidence%)');
+                  }),
+
+                  SizedBox(height: 12),
+
                   const Text('Classifications:'),
-                  Text(_classifications.toString()),
+                  ..._classifications.map((d) {
+                    final rawName = d['className'] ?? d['class'] ?? 'Unknown';
+                    final className = rawName.toString(); // on le force à String
+                    final confidence = d['confidence'] != null
+                        ? (d['confidence'] * 100).toStringAsFixed(1)
+                        : '?';
+                    return Text('$className ($confidence%)');
+                  }),
+
+
+
                 ],
               ),
             ),
