@@ -4,22 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:ultralytics_yolo/yolo.dart';
 import 'package:ultralytics_yolo/yolo_streaming_config.dart';
 import 'package:ultralytics_yolo/yolo_view.dart';
+import 'package:ultralytics_yolo_example/presentation/screens/single_image_screen.dart';
 
 void main() => runApp(const YOLODemo());
 class YOLODemo extends StatefulWidget {
   const YOLODemo({super.key});
-
   @override
   _YOLODemoState createState() => _YOLODemoState();
 }
 
 class _YOLODemoState extends State<YOLODemo> {
   // The classifier instance for processing frames received from the stream.
-  final classifier = YOLO(
+  YOLO classifier = YOLO(
     modelPath: 'yolo11n-cls',
     task: YOLOTask.classify,
+      useMultiInstance:true
   );
-
   // State variables
   List<dynamic> _classificationResults = [];
   bool _isLoading = true;
@@ -34,6 +34,7 @@ class _YOLODemoState extends State<YOLODemo> {
     super.initState();
     // We only load the model now. Subscription happens after the view is created.
     loadYOLOModel();
+
   }
 
   Future<void> loadYOLOModel() async {
@@ -60,17 +61,32 @@ class _YOLODemoState extends State<YOLODemo> {
 
   // Define a YOLOViewController to interact with the view if needed.
   // It's good practice even if you don't use it immediately.
-  final _yoloViewController = YOLOViewController();
+  YOLOViewController _yoloViewController = YOLOViewController();
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(title: const Text('YOLO Live Classification')),
-        body: Column(
-          children: [
-            Expanded(
-              flex: 3,
+        return
+        Scaffold(
+        appBar: AppBar(
+        title: const Text('YOLO Live Classification'),
+        actions: [
+          IconButton(
+              onPressed: () async {
+          await _yoloViewController.stop();
+          Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SingleImageScreen()),
+        ).then((_) async{
+          await _yoloViewController.start();
+          await loadYOLOModel();
+          });
+          }, icon: const Icon(Icons.image)),
+        ],
+      ),
+    body: Column(
+    children: [
+    Expanded(
+    flex: 3,
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : YOLOView(
@@ -137,7 +153,7 @@ class _YOLODemoState extends State<YOLODemo> {
             ),
           ],
         ),
-      ),
-    );
+      );
+
   }
 }

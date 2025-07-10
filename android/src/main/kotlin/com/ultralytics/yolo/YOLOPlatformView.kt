@@ -216,6 +216,17 @@ class YOLOPlatformView(
                         result.error("stop_error", "Error stopping YOLOView: ${e.message}", null)
                     }
                 }
+                "startCamera" -> {
+                    Log.d(TAG, "Received manual start call from Flutter")
+                    try {
+                        yoloView.startCamera()
+                        Log.d(TAG, "YOLOView started successfully via method call")
+                        result.success(null)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error starting YOLOView via method call", e)
+                        result.error("start_error", "Error starting YOLOView: ${e.message}", null)
+                    }
+                }
                 "setModel" -> {
                     val modelPath = call.argument<String>("modelPath")
                     val taskString = call.argument<String>("task")

@@ -488,6 +488,21 @@ class YOLOViewController {
     }
   }
 
+  Future<void> start() async {
+    if (_methodChannel == null) {
+      logInfo(
+        'YOLOViewController: Warning - Cannot start, view not yet created',
+      );
+      return;
+    }
+    try {
+      await _methodChannel!.invokeMethod('startCamera');
+      logInfo('YOLOViewController: Camera and inference started successfully');
+    } catch (e) {
+      logInfo('YOLOViewController: Error starting camera and inference: $e');
+    }
+  }
+
   /// Captures the current camera frame with detection overlays.
   ///
   /// Returns the captured image as a Uint8List (JPEG format) that includes
