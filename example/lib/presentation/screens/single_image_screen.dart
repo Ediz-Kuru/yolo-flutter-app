@@ -314,9 +314,14 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
             }
           }).toList();
 
+          _classifications = List<Map<String, dynamic>>.from(
+            classificationResults['detections'],
+          );
+
         } else {
           _detections = [];
           _croppedImages = [];
+          _classifications = [];
         }
 
 
