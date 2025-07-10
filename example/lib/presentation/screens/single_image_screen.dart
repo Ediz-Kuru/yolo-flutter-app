@@ -383,36 +383,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  if (_croppedImages.isNotEmpty)
-                    Column(
-                      children: [
-                        const SizedBox(height: 12),
-                        const Text('Images découpées :'),
-                        SizedBox(
-                          height: 120,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _croppedImages.length,
-                            itemBuilder: (context, index) {
-                              final imgBytes = _croppedImages[index];
-                              if (imgBytes.isEmpty) {
-                                return const SizedBox.shrink();
-                              }
-                              return Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    showImageViewer(context, MemoryImage(imgBytes),
-                                        swipeDismissible: true);
-                                  },
-                                  child: Image.memory(imgBytes, fit: BoxFit.contain),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
+
 
                   if (_annotatedImage != null)
                     SizedBox(
@@ -435,7 +406,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                     ),
                   const SizedBox(height: 10),
 
-                  const Text('Detections:'),
+                  /*const Text('Detections:'),
                   ..._detections.map((d) {
                     final rawName = d['className'] ?? d['class'] ?? 'Unknown';
                     final className = rawName.toString(); // on le force à String
@@ -443,11 +414,58 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                         ? (d['confidence'] * 100).toStringAsFixed(1)
                         : '?';
                     return Text('$className ($confidence%)');
-                  }),
+                  }),*/
+
+
+
+                  if (_croppedImages.isNotEmpty)
+                    Column(
+                      children: [
+                        const SizedBox(height: 12),
+                        const Text('Détections :'),
+                        SizedBox(
+                          height: 120,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _croppedImages.length,
+                            itemBuilder: (context, index) {
+                              final imgBytes = _croppedImages[index];
+                              if (imgBytes.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    showImageViewer(context, MemoryImage(imgBytes),
+                                        swipeDismissible: true);
+                                  },
+                                  //child: Image.memory(imgBytes, fit: BoxFit.contain),
+                                  child: Column(
+                                    children: [
+                                      Expanded(
+                                        child: Image.memory(imgBytes, fit: BoxFit.contain),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _detections.length > index
+                                            ? '${_detections[index]['className'] ?? _detections[index]['class'] ?? 'Unknown'} '
+                                            '(${((_detections[index]['confidence'] ?? 0) * 100).toStringAsFixed(1)}%)'
+                                            : 'Unknown',
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
 
                   SizedBox(height: 12),
-
-
 
                   const Text('Classifications:'),
                   ..._classifications.map((d) {
@@ -458,7 +476,6 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                         : '?';
                     return Text('$className ($confidence%)');
                   }),
-
 
 
                 ],
