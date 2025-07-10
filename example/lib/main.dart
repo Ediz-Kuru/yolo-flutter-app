@@ -6,7 +6,7 @@ import 'package:ultralytics_yolo/yolo_streaming_config.dart';
 import 'package:ultralytics_yolo/yolo_view.dart';
 import 'package:ultralytics_yolo_example/presentation/screens/single_image_screen.dart';
 
-void main() => runApp(const YOLODemo());
+void main() => runApp(MaterialApp(home: const YOLODemo()));
 class YOLODemo extends StatefulWidget {
   const YOLODemo({super.key});
   @override
