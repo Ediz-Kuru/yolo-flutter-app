@@ -485,17 +485,30 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('🌍 Qualité de l’air :',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text('📍 Lieu : ${_airQualityData!.city?.name ?? 'Inconnu'}'),
-                    Text('🧪 AQI : ${_airQualityData!.aqi ?? 'N/A'}'),
+                    const Text(
+                      'Qualité de l’air :',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Text('Lieu : ${_airQualityData!.city?.name ?? 'Inconnu'}'),
+                    Text('AQI : ${_airQualityData!.aqi ?? 'N/A'}'),
                     const SizedBox(height: 8),
-                    const Text('💨 Polluants :'),
-                    ...?_airQualityData!.iaqi?.entries.map((e) => Text(
-                      '${e.key.toUpperCase()} : ${e.value.value?.toStringAsFixed(2) ?? 'N/A'}',
-                    )),
+                    const Text('Polluants :'),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 16, // espace horizontal entre colonnes
+                      runSpacing: 8, // espace vertical entre lignes
+                      children: _airQualityData!.iaqi?.entries.map((e) {
+                        return SizedBox(
+                          width: MediaQuery.of(context).size.width / 2 - 24, // pour faire 2 colonnes
+                          child: Text(
+                            '${e.key.toUpperCase()} : ${e.value.value?.toStringAsFixed(2) ?? 'N/A'}',
+                          ),
+                        );
+                      }).toList() ?? [],
+                    ),
                   ],
                 ),
+
 
             const SizedBox(height: 20),
 
@@ -542,6 +555,17 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                 width: double.infinity,
                 child: Image.memory(_imageBytes!),
               ),
+
+            const SizedBox(height: 12),
+
+            const Text('Classifications:'),
+            ..._classifications.map((d) {
+              final className = (d['className'] ?? d['class'] ?? 'Unknown').toString();
+              final confidence = d['confidence'] != null
+                  ? (d['confidence'] * 100).toStringAsFixed(1)
+                  : '?';
+              return Text('$className ($confidence%)');
+            }),
 
             const SizedBox(height: 10),
 
@@ -592,16 +616,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                 ],
               ),
 
-            const SizedBox(height: 12),
 
-            const Text('Classifications:'),
-            ..._classifications.map((d) {
-              final className = (d['className'] ?? d['class'] ?? 'Unknown').toString();
-              final confidence = d['confidence'] != null
-                  ? (d['confidence'] * 100).toStringAsFixed(1)
-                  : '?';
-              return Text('$className ($confidence%)');
-            }),
           ],
         ),
       ),
