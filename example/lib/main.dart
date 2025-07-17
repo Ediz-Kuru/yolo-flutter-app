@@ -5,8 +5,30 @@ import 'package:ultralytics_yolo/yolo.dart';
 import 'package:ultralytics_yolo/yolo_streaming_config.dart';
 import 'package:ultralytics_yolo/yolo_view.dart';
 import 'package:ultralytics_yolo_example/presentation/screens/single_image_screen.dart';
+import 'package:ultralytics_yolo_example/waqi.dart';
+
 
 void main() => runApp(const YOLODemo());
+
+=======
+import 'drawer.dart';
+
+void main() => runApp(const MyApp());
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      initialRoute: AppRoutes.mainPage,
+      routes: {
+        AppRoutes.mainPage: (context) => const YOLODemo(),
+        AppRoutes.waqiPage: (context) => const AirQualityPage(),
+      },
+    );
+  }
+}
 
 class YOLODemo extends StatefulWidget {
   const YOLODemo({super.key});
@@ -154,9 +176,17 @@ class _YOLODemoState extends State<YOLODemo> {
                 ),
               ),
             ),
+
           ),
         ],
       ),
     );
+=======
+          ],
+        ),
+          drawer: const AppDrawer(),
+      );
+
+
   }
 }
