@@ -381,6 +381,38 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
     }
   }
 
+  String analyzeAQIAndDiseaseLink(int? aqi) {
+    if (aqi == null) return "AQI inconnu. Impossible d’évaluer le lien avec la maladie.";
+
+    String quality;
+    double probability;
+
+    if (aqi <= 50) {
+      quality = "Bonne";
+      probability = 0.05;
+    } else if (aqi <= 100) {
+      quality = "Modérée";
+      probability = 0.10;
+    } else if (aqi <= 150) {
+      quality = "Mauvaise pour les groupes sensibles";
+      probability = 0.25;
+    } else if (aqi <= 200) {
+      quality = "Mauvaise";
+      probability = 0.45;
+    } else if (aqi <= 300) {
+      quality = "Très mauvaise";
+      probability = 0.65;
+    } else {
+      quality = "Dangereuse";
+      probability = 0.85;
+    }
+
+    return "Qualité de l’air : $quality (AQI = $aqi). "
+        "Il y a environ ${(probability * 100).toStringAsFixed(0)}% de chances "
+        "que cette pollution soit un facteur ayant contribué à la potentielle maladie observée sur la feuille.";
+  }
+
+
   /// Picks an image from the gallery and runs inference
   ///
   /// This method:
@@ -536,6 +568,15 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                     ),
                   ],
                 ),
+
+            if (_airQualityData != null && _classifications.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: Text(
+                  analyzeAQIAndDiseaseLink(_airQualityData!.aqi),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
 
 
             const SizedBox(height: 20),
