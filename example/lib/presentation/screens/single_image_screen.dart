@@ -17,6 +17,59 @@ import 'package:image/image.dart' as img;
 /// - Pick an image from the gallery
 /// - Run YOLO inference on the selected image
 /// - View detection results and annotated image
+///
+///
+
+import 'package:geolocator/geolocator.dart'; // Pour le GPS
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+class AirQualityData {
+  final int? aqi;
+  final City? city;
+  final Map<String, Pollutant>? iaqi;
+
+  AirQualityData({this.aqi, this.city, this.iaqi});
+
+  factory AirQualityData.fromJson(Map<String, dynamic> json) {
+    if (json['status'] != 'ok') {
+      debugPrint('API status is not OK: ${json['data']}');
+      return AirQualityData();
+    }
+
+    final data = json['data'] as Map<String, dynamic>;
+
+    Map<String, Pollutant>? iaqiData;
+    if (data['iaqi'] != null) {
+      iaqiData = (data['iaqi'] as Map).map(
+            (key, value) => MapEntry(key, Pollutant.fromJson(value)),
+      ).cast<String, Pollutant>();
+    }
+
+    return AirQualityData(
+      aqi: data['aqi'] as int?,
+      city: data['city'] != null ? City.fromJson(data['city']) : null,
+      iaqi: iaqiData,
+    );
+  }
+}
+
+class City {
+  final String? name;
+  City({this.name});
+  factory City.fromJson(Map<String, dynamic> json) {
+    return City(name: json['name'] as String?);
+  }
+}
+
+class Pollutant {
+  final double? value;
+  Pollutant({this.value});
+  factory Pollutant.fromJson(Map<String, dynamic> json) {
+    return Pollutant(value: (json['v'] as num?)?.toDouble());
+  }
+}
+
 class SingleImageScreen extends StatefulWidget {
   const SingleImageScreen({super.key});
 
@@ -30,6 +83,11 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
   List<Map<String, dynamic>> _classifications = [];
   Uint8List? _imageBytes;
   Uint8List? _annotatedImage;
+  AirQualityData? _airQualityData;
+  bool _isLoadingAQ = true;
+  String? _errorMessageAQ;
+  final String _apiKey = '30c439655961e0b68355453e7665cdfebbfd51cb';
+
 
   late YOLO _yolo;
   final YOLO _classifier = YOLO(
@@ -96,7 +154,9 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
   void initState() {
     super.initState();
     _initializeYOLO();
+    _fetchAirQualityData(); // ← Ajout
   }
+
 
   /// Initializes the YOLO model for inference
   ///
@@ -148,6 +208,59 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
       }
     }
   }
+
+  Future<Position> _determinePosition() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) throw Exception('Location services are disabled.');
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw Exception('Location permissions are denied');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception('Location permissions are permanently denied.');
+    }
+
+    return await Geolocator.getCurrentPosition();
+  }
+
+  Future<void> _fetchAirQualityData() async {
+    setState(() {
+      _isLoadingAQ = true;
+      _errorMessageAQ = null;
+      _airQualityData = null;
+    });
+
+    try {
+      final position = await _determinePosition();
+      final Uri uri = Uri.parse(
+        'https://api.waqi.info/feed/geo:${position.latitude};${position.longitude}/?token=$_apiKey',
+      );
+
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final data = AirQualityData.fromJson(jsonResponse);
+
+        if (data.aqi != null) {
+          setState(() => _airQualityData = data);
+        } else {
+          setState(() => _errorMessageAQ = 'No AQI data found.');
+        }
+      } else {
+        setState(() => _errorMessageAQ = 'Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      setState(() => _errorMessageAQ = 'Error fetching AQI data: $e');
+    } finally {
+      setState(() => _isLoadingAQ = false);
+    }
+  }
+
 
   /// Copies the .mlpackage from assets to local storage
   ///
@@ -346,146 +459,151 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 20),
-          Center(
-            child: ElevatedButton(
-              onPressed: _pickAndPredict,
-              child: const Text('Pick Image & Run Inference'),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-          if (!_isModelReady && Platform.isIOS)
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(width: 10),
-                  Text("Preparing local model..."),
-                ],
-              ),
-            )
-          else if (!_isModelReady)
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(width: 10),
-                  Text("Model loading..."),
-                ],
-              ),
-            ),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-
-
-                  if (_annotatedImage != null)
-                    SizedBox(
-                      height: 300,
-                      width: double.infinity,
-                      //child: Image.memory(_annotatedImage!),
-                      child: GestureDetector(
-                        onTap: () {
-                          showImageViewer(context, MemoryImage(_annotatedImage!),
-                              swipeDismissible: false);
-                        },
-                        child: Image.memory(_annotatedImage!),
-                      ),
-                    )
-                  else if (_imageBytes != null)
-                    SizedBox(
-                      height: 300,
-                      width: double.infinity,
-                      child: Image.memory(_imageBytes!),
-                    ),
-                  const SizedBox(height: 10),
-
-                  /*const Text('Detections:'),
-                  ..._detections.map((d) {
-                    final rawName = d['className'] ?? d['class'] ?? 'Unknown';
-                    final className = rawName.toString(); // on le force à String
-                    final confidence = d['confidence'] != null
-                        ? (d['confidence'] * 100).toStringAsFixed(1)
-                        : '?';
-                    return Text('$className ($confidence%)');
-                  }),*/
-
-
-
-                  if (_croppedImages.isNotEmpty)
-                    Column(
-                      children: [
-                        const SizedBox(height: 12),
-                        const Text('Détections :'),
-                        SizedBox(
-                          height: 120,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _croppedImages.length,
-                            itemBuilder: (context, index) {
-                              final imgBytes = _croppedImages[index];
-                              if (imgBytes.isEmpty) {
-                                return const SizedBox.shrink();
-                              }
-                              return Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    showImageViewer(context, MemoryImage(imgBytes),
-                                        swipeDismissible: true);
-                                  },
-                                  //child: Image.memory(imgBytes, fit: BoxFit.contain),
-                                  child: Column(
-                                    children: [
-                                      Expanded(
-                                        child: Image.memory(imgBytes, fit: BoxFit.contain),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        _detections.length > index
-                                            ? '${_detections[index]['className'] ?? _detections[index]['class'] ?? 'Unknown'} '
-                                            '(${((_detections[index]['confidence'] ?? 0) * 100).toStringAsFixed(1)}%)'
-                                            : 'Unknown',
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-
-                  SizedBox(height: 12),
-
-                  const Text('Classifications:'),
-                  ..._classifications.map((d) {
-                    final rawName = d['className'] ?? d['class'] ?? 'Unknown';
-                    final className = rawName.toString(); // on le force à String
-                    final confidence = d['confidence'] != null
-                        ? (d['confidence'] * 100).toStringAsFixed(1)
-                        : '?';
-                    return Text('$className ($confidence%)');
-                  }),
-
-
-                ],
-              ),
-            ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchAirQualityData,
           ),
         ],
+      ),
+      body: SingleChildScrollView( // <--- TOUT est scrollable maintenant
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+
+            const SizedBox(height: 20),
+
+            if (_isLoadingAQ)
+              const Center(child: CircularProgressIndicator())
+            else if (_errorMessageAQ != null)
+              Text(
+                _errorMessageAQ!,
+                style: const TextStyle(color: Colors.red),
+              )
+            else if (_airQualityData != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('🌍 Qualité de l’air :',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text('📍 Lieu : ${_airQualityData!.city?.name ?? 'Inconnu'}'),
+                    Text('🧪 AQI : ${_airQualityData!.aqi ?? 'N/A'}'),
+                    const SizedBox(height: 8),
+                    const Text('💨 Polluants :'),
+                    ...?_airQualityData!.iaqi?.entries.map((e) => Text(
+                      '${e.key.toUpperCase()} : ${e.value.value?.toStringAsFixed(2) ?? 'N/A'}',
+                    )),
+                  ],
+                ),
+
+            const SizedBox(height: 20),
+
+            Center(
+              child: ElevatedButton(
+                onPressed: _pickAndPredict,
+                child: const Text('Pick Image & Run Inference'),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            if (!_isModelReady)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    CircularProgressIndicator(),
+                    SizedBox(width: 10),
+                    Text("Model loading..."),
+                  ],
+                ),
+              ),
+
+            if (_annotatedImage != null)
+              SizedBox(
+                height: 300,
+                width: double.infinity,
+                child: GestureDetector(
+                  onTap: () {
+                    showImageViewer(
+                      context,
+                      MemoryImage(_annotatedImage!),
+                      swipeDismissible: false,
+                    );
+                  },
+                  child: Image.memory(_annotatedImage!),
+                ),
+              )
+            else if (_imageBytes != null)
+              SizedBox(
+                height: 300,
+                width: double.infinity,
+                child: Image.memory(_imageBytes!),
+              ),
+
+            const SizedBox(height: 10),
+
+            if (_croppedImages.isNotEmpty)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  const Text('Détections :'),
+                  SizedBox(
+                    height: 120,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _croppedImages.length,
+                      itemBuilder: (context, index) {
+                        final imgBytes = _croppedImages[index];
+                        if (imgBytes.isEmpty) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: GestureDetector(
+                            onTap: () {
+                              showImageViewer(
+                                context,
+                                MemoryImage(imgBytes),
+                                swipeDismissible: true,
+                              );
+                            },
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: Image.memory(imgBytes, fit: BoxFit.contain),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _detections.length > index
+                                      ? '${_detections[index]['className'] ?? _detections[index]['class'] ?? 'Unknown'} '
+                                      '(${((_detections[index]['confidence'] ?? 0) * 100).toStringAsFixed(1)}%)'
+                                      : 'Unknown',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+
+            const SizedBox(height: 12),
+
+            const Text('Classifications:'),
+            ..._classifications.map((d) {
+              final className = (d['className'] ?? d['class'] ?? 'Unknown').toString();
+              final confidence = d['confidence'] != null
+                  ? (d['confidence'] * 100).toStringAsFixed(1)
+                  : '?';
+              return Text('$className ($confidence%)');
+            }),
+          ],
+        ),
       ),
     );
   }
