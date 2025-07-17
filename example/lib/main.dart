@@ -7,8 +7,10 @@ import 'package:ultralytics_yolo/yolo_view.dart';
 import 'package:ultralytics_yolo_example/presentation/screens/single_image_screen.dart';
 
 void main() => runApp(const YOLODemo());
+
 class YOLODemo extends StatefulWidget {
   const YOLODemo({super.key});
+
   @override
   _YOLODemoState createState() => _YOLODemoState();
 }
@@ -18,8 +20,9 @@ class _YOLODemoState extends State<YOLODemo> {
   YOLO classifier = YOLO(
     modelPath: 'yolo11n-cls',
     task: YOLOTask.classify,
-      useMultiInstance:true
+    useMultiInstance: true,
   );
+
   // State variables
   List<dynamic> _classificationResults = [];
   bool _isLoading = true;
@@ -34,7 +37,6 @@ class _YOLODemoState extends State<YOLODemo> {
     super.initState();
     // We only load the model now. Subscription happens after the view is created.
     loadYOLOModel();
-
   }
 
   Future<void> loadYOLOModel() async {
@@ -42,20 +44,21 @@ class _YOLODemoState extends State<YOLODemo> {
     await classifier.loadModel();
     setState(() => _isLoading = false);
   }
+
   /// Processes a single frame from the camera stream.
   Future<void> _processFrame(Uint8List imageData) async {
-    if(_isProcessingFrame) return;
+    if (_isProcessingFrame) return;
     _isProcessingFrame = true;
     _stopwatch.reset();
     _stopwatch.start();
     final results = await classifier.predict(imageData);
     _stopwatch.stop();
-      if (mounted) {
-        setState(() {
-          _classificationResults = results['detections'] ?? [];
-          _processingTimeMs = _stopwatch.elapsedMilliseconds;
-        });
-      }
+    if (mounted) {
+      setState(() {
+        _classificationResults = results['detections'] ?? [];
+        _processingTimeMs = _stopwatch.elapsedMilliseconds;
+      });
+    }
     _isProcessingFrame = false;
   }
 
@@ -65,95 +68,95 @@ class _YOLODemoState extends State<YOLODemo> {
 
   @override
   Widget build(BuildContext context) {
-        return
-        Scaffold(
-        appBar: AppBar(
+    return Scaffold(
+      appBar: AppBar(
         title: const Text('YOLO Live Classification'),
         actions: [
           IconButton(
-              onPressed: () async {
-          await _yoloViewController.stop();
-          Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SingleImageScreen()),
-        ).then((_) async{
-          await _yoloViewController.start();
-          await loadYOLOModel();
-          });
-          }, icon: const Icon(Icons.image)),
+            onPressed: () async {
+              await _yoloViewController.stop();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SingleImageScreen()),
+              ).then((_) async {
+                await _yoloViewController.start();
+                await loadYOLOModel();
+              });
+            },
+            icon: const Icon(Icons.image),
+          ),
         ],
       ),
-    body: Column(
-    children: [
-    Expanded(
-    flex: 3,
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : YOLOView(
-                // We pass a key to ensure the widget is properly rebuilt if needed.
-                key: ValueKey(classifier.instanceId),
-                modelPath: 'yolo11n',
-                task: YOLOTask.detect,
-                controller: _yoloViewController,
-                streamingConfig: YOLOStreamingConfig.throttled(
-                  maxFPS: 10,
-                  includeOriginalImage: true,
-                ),
-                // The onStreamingData callback is the most direct way to get frame data.
-                onStreamingData: (data) {
-                  final image = data['originalImage'] as Uint8List?;
-                  if (image != null) {
-                    _processFrame(image);
-                  }
-                },
-              ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Container(
-                color: Colors.black,
-                width: double.infinity,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Live Classification Result',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (_classificationResults.isNotEmpty)
-                        Text(
-                          'Class: ${_classificationResults.first['className']}\n'
-                              'Confidence: ${(_classificationResults.first['confidence'] * 100).toStringAsFixed(1)}%',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.lightGreenAccent,
-                            fontSize: 18,
-                          ),
-                        )
-                      else
-                        const Text(
-                          'Detecting...',
-                          style: TextStyle(color: Colors.grey, fontSize: 18),
-                        ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Processing Time: $_processingTimeMs ms',
-                        style: const TextStyle(color: Colors.amber, fontSize: 14),
-                      ),
-                    ],
+      body: Column(
+        children: [
+          Expanded(
+            flex: 3,
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : YOLOView(
+                    // We pass a key to ensure the widget is properly rebuilt if needed.
+                    key: ValueKey(classifier.instanceId),
+                    modelPath: 'yolo11n',
+                    task: YOLOTask.detect,
+                    controller: _yoloViewController,
+                    streamingConfig: YOLOStreamingConfig.throttled(
+                      maxFPS: 10,
+                      includeOriginalImage: true,
+                    ),
+                    // The onStreamingData callback is the most direct way to get frame data.
+                    onStreamingData: (data) {
+                      final image = data['originalImage'] as Uint8List?;
+                      if (image != null) {
+                        _processFrame(image);
+                      }
+                    },
                   ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Container(
+              color: Colors.black,
+              width: double.infinity,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Live Classification Result',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_classificationResults.isNotEmpty)
+                      Text(
+                        'Class: ${_classificationResults.first['className']}\n'
+                        'Confidence: ${(_classificationResults.first['confidence'] * 100).toStringAsFixed(1)}%',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.lightGreenAccent,
+                          fontSize: 18,
+                        ),
+                      )
+                    else
+                      const Text(
+                        'Detecting...',
+                        style: TextStyle(color: Colors.grey, fontSize: 18),
+                      ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Processing Time: $_processingTimeMs ms',
+                      style: const TextStyle(color: Colors.amber, fontSize: 14),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
-      );
-
+          ),
+        ],
+      ),
+    );
   }
 }
