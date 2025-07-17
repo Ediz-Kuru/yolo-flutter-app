@@ -1,10 +1,14 @@
 // drawer.dart
 import 'package:flutter/material.dart';
+import 'package:ultralytics_yolo_example/presentation/screens/single_image_screen.dart';
+import 'package:ultralytics_yolo_example/waqi.dart';
+
 
 // Define route names for clarity and maintainability
 class AppRoutes {
   static const String mainPage = '/'; // Or '/main' if you have a splash screen, etc.
   static const String waqiPage = '/waqi';
+  static const String singleImagePage = '/single-image';
 // Add other routes here
 // static const String settingsPage = '/settings';
 }
@@ -39,13 +43,27 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            enabled: currentRoute != AppRoutes.waqiPage,
-            title: const Text('Air Quality'),
+            title: const Text('Single Image Detection'),
             onTap: () {
-              // Update the state of the app.
               Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, AppRoutes.waqiPage);
-              // ...
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SingleImageScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Air'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AirQualityPage(),
+                ),
+              );
             },
           ),
         ],
