@@ -485,9 +485,37 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Qualité de l’air :',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Qualité de l’air :',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.help_outline, size: 20),
+                          tooltip: 'Qu’est-ce que la qualité de l’air ?',
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Qualité de l’air'),
+                                content: const Text(
+                                  'L’indice de qualité de l’air (AQI) est une mesure standard '
+                                      'qui indique la pollution de l’air dans votre région. '
+                                      'Plus la valeur est élevée, plus la qualité de l’air est mauvaise.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    child: const Text('Fermer'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                     Text('Lieu : ${_airQualityData!.city?.name ?? 'Inconnu'}'),
                     Text('AQI : ${_airQualityData!.aqi ?? 'N/A'}'),
