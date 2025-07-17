@@ -8,6 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ultralytics_yolo/yolo.dart';
+import 'package:image/image.dart' as img;
+
 
 /// A screen that demonstrates YOLO inference on a single image.
 ///
@@ -45,6 +47,50 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
   // Name of the zip file in assets (e.g., assets/models/yolo11n.mlpackage.zip)
   final String _mlPackageZipAssetName =
       'yolo11n-seg.mlpackage.zip'; // Changed to yolo11n
+
+
+
+
+
+  /// Coupe une image à partir des coordonnées (x1, y1, x2, y2).
+  /// [imageBytes] : bytes de l'image complète.
+  /// Retourne les bytes PNG de la sous-image.
+  Uint8List cropImage(Uint8List imageBytes, int x1, int y1, int x2, int y2) {
+    // Decode l'image originale en image manipulable
+    img.Image? originalImage = img.decodeImage(imageBytes);
+    if (originalImage == null) {
+      throw Exception('Impossible de décoder l\'image');
+    }
+
+    // Calculer largeur et hauteur du crop
+    int width = x2 - x1;
+    int height = y2 - y1;
+
+    // S'assurer que les coordonnées sont dans les limites
+    x1 = x1.clamp(0, originalImage.width - 1);
+    y1 = y1.clamp(0, originalImage.height - 1);
+    width = width.clamp(1, originalImage.width - x1);
+    height = height.clamp(1, originalImage.height - y1);
+
+    // Extraire la région
+    img.Image cropped = img.copyCrop(
+      originalImage,
+      x: x1,
+      y: y1,
+      width: width,
+      height: height,
+    );
+
+    // Encoder en PNG
+    List<int> pngBytes = img.encodePng(cropped);
+
+    return Uint8List.fromList(pngBytes);
+  }
+  List<Uint8List> _croppedImages = [];
+
+
+
+
 
   @override
   void initState() {
@@ -246,18 +292,38 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
     final classificationResults = await _classifier.predict(bytes);
     if (mounted) {
       setState(() {
+        _imageBytes = bytes;
         if (detectionResults.containsKey('boxes') &&
-            detectionResults['boxes'] is List) {
-          _detections = List<Map<String, dynamic>>.from(
-            detectionResults['boxes'],
-          );
+            detectionResults['boxes'] is List &&
+            _imageBytes != null) {
+          _detections = List<Map<String, dynamic>>.from(detectionResults['boxes']);
+
+          // Générer les images cropped pour chaque détection
+          _croppedImages = _detections.map((d) {
+            try {
+              // Récupère et convertit les coordonnées en int
+              int x1 = (d['x1'] as num).toInt();
+              int y1 = (d['y1'] as num).toInt();
+              int x2 = (d['x2'] as num).toInt();
+              int y2 = (d['y2'] as num).toInt();
+
+              return cropImage(_imageBytes!, x1, y1, x2, y2);
+            } catch (e) {
+              debugPrint('Erreur cropping: $e');
+              return Uint8List(0); // image vide en cas d'erreur
+            }
+          }).toList();
+
           _classifications = List<Map<String, dynamic>>.from(
             classificationResults['detections'],
           );
+
         } else {
           _detections = [];
+          _croppedImages = [];
           _classifications = [];
         }
+
 
         if (detectionResults.containsKey('annotatedImage') &&
             detectionResults['annotatedImage'] is Uint8List) {
@@ -317,6 +383,8 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
+
+
                   if (_annotatedImage != null)
                     SizedBox(
                       height: 300,
@@ -337,10 +405,79 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                       child: Image.memory(_imageBytes!),
                     ),
                   const SizedBox(height: 10),
-                  const Text('Detections:'),
-                  Text(_detections.toString()),
+
+                  /*const Text('Detections:'),
+                  ..._detections.map((d) {
+                    final rawName = d['className'] ?? d['class'] ?? 'Unknown';
+                    final className = rawName.toString(); // on le force à String
+                    final confidence = d['confidence'] != null
+                        ? (d['confidence'] * 100).toStringAsFixed(1)
+                        : '?';
+                    return Text('$className ($confidence%)');
+                  }),*/
+
+
+
+                  if (_croppedImages.isNotEmpty)
+                    Column(
+                      children: [
+                        const SizedBox(height: 12),
+                        const Text('Détections :'),
+                        SizedBox(
+                          height: 120,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _croppedImages.length,
+                            itemBuilder: (context, index) {
+                              final imgBytes = _croppedImages[index];
+                              if (imgBytes.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    showImageViewer(context, MemoryImage(imgBytes),
+                                        swipeDismissible: true);
+                                  },
+                                  //child: Image.memory(imgBytes, fit: BoxFit.contain),
+                                  child: Column(
+                                    children: [
+                                      Expanded(
+                                        child: Image.memory(imgBytes, fit: BoxFit.contain),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _detections.length > index
+                                            ? '${_detections[index]['className'] ?? _detections[index]['class'] ?? 'Unknown'} '
+                                            '(${((_detections[index]['confidence'] ?? 0) * 100).toStringAsFixed(1)}%)'
+                                            : 'Unknown',
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+
+                  SizedBox(height: 12),
+
                   const Text('Classifications:'),
-                  Text(_classifications.toString()),
+                  ..._classifications.map((d) {
+                    final rawName = d['className'] ?? d['class'] ?? 'Unknown';
+                    final className = rawName.toString(); // on le force à String
+                    final confidence = d['confidence'] != null
+                        ? (d['confidence'] * 100).toStringAsFixed(1)
+                        : '?';
+                    return Text('$className ($confidence%)');
+                  }),
+
+
                 ],
               ),
             ),

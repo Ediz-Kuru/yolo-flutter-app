@@ -17,7 +17,7 @@ dependencies:
   path_provider: ^2.0.0 # Adjust version as needed
   archive: ^3.0.0 # Adjust version as needed, for unzipping
   http: ^1.0.0 # For downloading models
-
+  geolocator: ^10.1.0
   ultralytics_yolo:
     path: ../
 
