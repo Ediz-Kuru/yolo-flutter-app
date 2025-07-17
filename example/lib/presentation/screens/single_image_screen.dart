@@ -350,10 +350,13 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
       body: Column(
         children: [
           const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _pickAndPredict,
-            child: const Text('Pick Image & Run Inference'),
+          Center(
+            child: ElevatedButton(
+              onPressed: _pickAndPredict,
+              child: const Text('Pick Image & Run Inference'),
+            ),
           ),
+
           const SizedBox(height: 10),
           if (!_isModelReady && Platform.isIOS)
             const Padding(
