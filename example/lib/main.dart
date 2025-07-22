@@ -87,20 +87,51 @@ class _YOLODemoState extends State<YOLODemo> {
         Scaffold(
         appBar: AppBar(
         title: const Text('YOLO Live Classification'),
-        actions: [
-          IconButton(
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.help_outline),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text('Aide'),
+                      content: const Text(
+                        'Cette application utilise un modèle YOLO pour classifier en temps réel ce que la caméra peut voir.\n\n'
+                            '• Lorsqu’une feuille est détectée, des boites apparaitront autours de la feuille et ses traces de maladies détectées. Le % affiché est la certitude du résultat.\n'
+                            '• En bas est affiché le nom de la maladie détectée et sa certitude aussi.'
+                            'Assurez-vous que la caméra est bien autorisée pour que l’application puisse fonctionner.',
+                      ),
+                      actions: [
+                        TextButton(
+                          child: const Text('Fermer'),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+            IconButton(
               onPressed: () async {
-          await _yoloViewController.stop();
-          Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SingleImageScreen()),
-        ).then((_) async{
-          await _yoloViewController.start();
-          await loadYOLOModel();
-          });
-          }, icon: const Icon(Icons.image)),
-        ],
-      ),
+                await _yoloViewController.stop();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SingleImageScreen()),
+                ).then((_) async {
+                  await _yoloViewController.start();
+                  await loadYOLOModel();
+                });
+              },
+              icon: const Icon(Icons.image),
+            ),
+          ],
+
+
+        ),
     body: Column(
     children: [
     Expanded(
