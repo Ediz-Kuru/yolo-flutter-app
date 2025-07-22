@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:ultralytics_yolo/yolo.dart';
 import 'package:image/image.dart' as img;
 
@@ -429,12 +430,38 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
       }
       return;
     }
+
+    PermissionStatus status;
+    if (Platform.isAndroid) {
+      status = await Permission.photos.status;
+      if (status.isDenied || status.isPermanentlyDenied) {
+        status = await Permission.photos.request();
+      }
+    } else if (Platform.isIOS) {
+      status = await Permission.photos.status;
+      if (status.isDenied || status.isPermanentlyDenied) {
+        status = await Permission.photos.request();
+      }
+    } else {
+      status = PermissionStatus.granted;
+    }
+
+    if (!status.isGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Permission refusée. Impossible d’ouvrir la galerie.')),
+        );
+      }
+      return;
+    }
+
     final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
     if (file == null) return;
 
     final bytes = await file.readAsBytes();
     final detectionResults = await _yolo.predict(bytes);
     final classificationResults = await _classifier.predict(bytes);
+
     if (mounted) {
       setState(() {
         _imageBytes = bytes;
