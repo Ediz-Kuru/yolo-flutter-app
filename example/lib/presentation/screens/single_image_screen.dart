@@ -493,6 +493,34 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text('Aide'),
+                    content: const Text(
+                      'Cette application utilise un modèle YOLO pour classifier une image sélectionné.\n\n'
+                          '• Lorsqu’une feuille est détectée, des boites apparaitront autours de la feuille et ses traces de maladies détectées. Le % affiché est la certitude du résultat.\n'
+                          '• En bas est affiché le nom de la maladie détectée, sa certitude, et des images séparés pour chaque chose détecté.'
+                          '• La localisation est aussi utilisé pour détecter la qualité de l’air dans les environs. Plus le AQI est élévé, moins l’air est bon. Et plus y a des chances que cela soit responsable pour la feuille malade.'
+                          'Assurez-vous que l’accès aux fichiers est bien autorisée pour que l’application puisse fonctionner.',
+                    ),
+                    actions: [
+                      TextButton(
+                        child: const Text('Fermer'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _fetchAirQualityData,
           ),
