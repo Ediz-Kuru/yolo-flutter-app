@@ -98,9 +98,11 @@ class _YOLODemoState extends State<YOLODemo> {
                       title: const Text('Aide'),
                       content: const Text(
                         'Cette application utilise un modèle YOLO pour classifier en temps réel ce que la caméra peut voir.\n\n'
-                            '• Lorsqu’une feuille est détectée, des boites apparaitront autours de la feuille et ses traces de maladies détectées. Le % affiché est la certitude du résultat.\n'
-                            '• En bas est affiché le nom de la maladie détectée et sa certitude aussi.'
-                            'Assurez-vous que la caméra est bien autorisée pour que l’application puisse fonctionner.',
+                            '1- Veuillez accepter les permissions de caméra afin que l’application puisse fonctionner correctement. \n'
+                            '2- Pointez votre caméra vers une feuille afin qu’elle soit détectée et analysée. Il se peut qu’une feuille ne soit pas détectée du premier coup. \n'
+                            '3- Lorsqu’une feuille est détectée, des boites apparaitront de celle-ci. D’autres apparaitront aussi autour des traces de maladies sur la feuilles. Le % affiché est la certitude du résultat.\n'
+                            '4- En bas est affiché le nom de la maladie détectée et sa certitude. \n.'
+                            ,
                       ),
                       actions: [
                         TextButton(

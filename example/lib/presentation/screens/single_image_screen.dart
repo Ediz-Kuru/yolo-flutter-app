@@ -529,10 +529,11 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                     title: const Text('Aide'),
                     content: const Text(
                       'Cette application utilise un modèle YOLO pour classifier une image sélectionné.\n\n'
-                          '• Lorsqu’une feuille est détectée, des boites apparaitront autours de la feuille et ses traces de maladies détectées. Le % affiché est la certitude du résultat.\n'
-                          '• En bas est affiché le nom de la maladie détectée, sa certitude, et des images séparés pour chaque chose détecté.'
-                          '• La localisation est aussi utilisé pour détecter la qualité de l’air dans les environs. Plus le AQI est élévé, moins l’air est bon. Et plus y a des chances que cela soit responsable pour la feuille malade.'
-                          'Assurez-vous que l’accès aux fichiers est bien autorisée pour que l’application puisse fonctionner.',
+                          '1- Acceptez les demandes de permissions de localisation et accès aux fichiers pour le fonctionnement de l’application. \n'
+                          '2- La localisation est utilisée  pour détecter la qualité de l’air dans les environs. Plus le AQI est élévé, moins l’air est bon. Et plus y a des chances que cela soit responsable pour la feuille malade.. \n'
+                          '3- Cliquez sur le bouton ’Select Image’ et choisissez une image à analyser. \n'
+                          '4- Lorsqu’une feuille est détectée, des boites apparaitront autours de la feuille et ses traces de maladies détectées. Le % affiché est la certitude du résultat.\n'
+                          '5- Plus bas est affiché le nom de la maladie détectée, sa certitude, et des images séparées pour chaque chose détectée. \n',
                     ),
                     actions: [
                       TextButton(
@@ -639,7 +640,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
             Center(
               child: ElevatedButton(
                 onPressed: _pickAndPredict,
-                child: const Text('Pick Image & Run Inference'),
+                child: const Text('Select Image'),
               ),
             ),
 
