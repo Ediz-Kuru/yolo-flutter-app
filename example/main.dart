@@ -1,6 +1,7 @@
 // Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
 import 'package:flutter/material.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:ultralytics_yolo/ultralytics_yolo.dart';
 import 'package:ultralytics_yolo_example/main.dart';
 
@@ -13,9 +14,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(title: 'YOLO Example', home: YOLODemo());
+    return MaterialApp(
+      title: 'YOLO Example',
+      home: ShowCaseWidget(
+        builder: (context) => const YOLODemo(),
+      ),
+    );
   }
 }
+
 
 class YOLOScreen extends StatelessWidget {
   const YOLOScreen({super.key});

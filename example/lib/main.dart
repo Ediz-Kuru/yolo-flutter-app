@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data' show Uint8List;
 import 'package:flutter/material.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:ultralytics_yolo/yolo.dart';
 import 'package:ultralytics_yolo/yolo_streaming_config.dart';
 import 'package:ultralytics_yolo/yolo_view.dart';
@@ -33,6 +34,11 @@ class YOLODemo extends StatefulWidget {
 
 class _YOLODemoState extends State<YOLODemo> {
   // The classifier instance for processing frames received from the stream.
+
+  final _keyQuestion = GlobalKey();
+  final _keyResults = GlobalKey();
+  final _keySecPage = GlobalKey();
+
   YOLO classifier = YOLO(
     modelPath: 'yolo11n-cls',
     task: YOLOTask.classify,
@@ -52,6 +58,9 @@ class _YOLODemoState extends State<YOLODemo> {
     super.initState();
     // We only load the model now. Subscription happens after the view is created.
     loadYOLOModel();
+    WidgetsBinding.instance!.addPostFrameCallback(
+        (_) => ShowCaseWidget.of(context)!.startShowCase([_keyResults, _keyQuestion, _keySecPage])
+    );
 
   }
 
@@ -89,7 +98,14 @@ class _YOLODemoState extends State<YOLODemo> {
         title: const Text('YOLO Live Classification'),
           actions: [
             IconButton(
-              icon: const Icon(Icons.help_outline),
+              icon: Showcase(
+                  key: _keyQuestion,
+                  targetPadding: const EdgeInsets.all(8),
+                  description: "Plus d'informations sur le fonctionnement de la page.",
+                  targetShapeBorder: const CircleBorder(),
+                  tooltipBackgroundColor: Colors.blueAccent,
+                  child: const Icon(Icons.help_outline)
+              ),
               onPressed: () {
                 showDialog(
                   context: context,
@@ -128,7 +144,13 @@ class _YOLODemoState extends State<YOLODemo> {
                   await loadYOLOModel();
                 });
               },
-              icon: const Icon(Icons.image),
+              icon: Showcase(
+                  key: _keySecPage,
+                  targetPadding: const EdgeInsets.all(8),
+                  description: "Pour accèder à la page d'analyse d'image.",
+                  targetShapeBorder: const CircleBorder(),
+                  tooltipBackgroundColor: Colors.blueAccent,
+                  child: const Icon(Icons.image)),
             ),
           ],
 
@@ -165,39 +187,46 @@ class _YOLODemoState extends State<YOLODemo> {
                 color: Colors.black,
                 width: double.infinity,
                 child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Live Classification Result',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (_classificationResults.isNotEmpty)
-                        Text(
-                          'Class: ${_classificationResults.first['className']}\n'
-                              'Confidence: ${(_classificationResults.first['confidence'] * 100).toStringAsFixed(1)}%',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.lightGreenAccent,
-                            fontSize: 18,
-                          ),
-                        )
-                      else
+                  child: Showcase(
+                    key: _keyResults,
+                    title: "Résultat",
+                    description: "Affiche la classe de l'objet détecté, ainsi que le % de confiance.",
+                    showArrow: true,
+                    tooltipBackgroundColor: Colors.blueAccent,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         const Text(
-                          'Detecting...',
-                          style: TextStyle(color: Colors.grey, fontSize: 18),
+                          'Live Classification Result',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Processing Time: $_processingTimeMs ms',
-                        style: const TextStyle(color: Colors.amber, fontSize: 14),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        if (_classificationResults.isNotEmpty)
+                          Text(
+                            'Class: ${_classificationResults.first['className']}\n'
+                                'Confidence: ${(_classificationResults.first['confidence'] * 100).toStringAsFixed(1)}%',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.lightGreenAccent,
+                              fontSize: 18,
+                            ),
+                          )
+                        else
+                          const Text(
+                            'Detecting...',
+                            style: TextStyle(color: Colors.grey, fontSize: 18),
+                          ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Processing Time: $_processingTimeMs ms',
+                          style: const TextStyle(color: Colors.amber, fontSize: 14),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
