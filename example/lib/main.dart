@@ -9,18 +9,20 @@ import 'package:ultralytics_yolo_example/waqi.dart';
 
 import 'drawer.dart';
 
-void main() => runApp(const MyApp());
+void main() => runApp( MyApp());
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+  MyApp({super.key});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorObservers: [routeObserver],
       initialRoute: AppRoutes.mainPage,
       routes: {
         AppRoutes.mainPage: (context) => const YOLODemo(),
         AppRoutes.waqiPage: (context) => const AirQualityPage(),
+        AppRoutes.singleImagePage: (context) => const SingleImageScreen(),
       },
     );
   }
@@ -31,7 +33,7 @@ class YOLODemo extends StatefulWidget {
   _YOLODemoState createState() => _YOLODemoState();
 }
 
-class _YOLODemoState extends State<YOLODemo> {
+class _YOLODemoState extends State<YOLODemo> with RouteAware{
   // The classifier instance for processing frames received from the stream.
   YOLO classifier = YOLO(
     modelPath: 'yolo11n-cls',
@@ -53,6 +55,28 @@ class _YOLODemoState extends State<YOLODemo> {
     // We only load the model now. Subscription happens after the view is created.
     loadYOLOModel();
 
+  }
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+  @override
+  Future<void> didPushNext()
+  async {
+    await _yoloViewController.stop();
+  }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  Future<void> didPopNext() async {
+    // Coming back to this page
+    await _yoloViewController.start();
+    await loadYOLOModel();
   }
 
   Future<void> loadYOLOModel() async {
@@ -116,20 +140,7 @@ class _YOLODemoState extends State<YOLODemo> {
                   },
                 );
               },
-            ),
-            IconButton(
-              onPressed: () async {
-                await _yoloViewController.stop();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SingleImageScreen()),
-                ).then((_) async {
-                  await _yoloViewController.start();
-                  await loadYOLOModel();
-                });
-              },
-              icon: const Icon(Icons.image),
-            ),
+            )
           ],
 
 

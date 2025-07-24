@@ -25,6 +25,8 @@ import 'package:geolocator/geolocator.dart'; // Pour le GPS
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:ultralytics_yolo_example/drawer.dart';
+
 class AirQualityData {
   final int? aqi;
   final City? city;
@@ -512,12 +514,9 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AppDrawer(),
       appBar: AppBar(
         title: const Text('Single Image Inference'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
@@ -740,8 +739,6 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                   ),
                 ],
               ),
-
-
           ],
         ),
       ),
