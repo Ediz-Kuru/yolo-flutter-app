@@ -625,7 +625,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                   ],
                 ),
 
-            if (_airQualityData != null && _classifications.isNotEmpty)
+            if (_airQualityData != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
                 child: Text(
