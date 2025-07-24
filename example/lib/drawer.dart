@@ -43,14 +43,14 @@ class AppDrawer extends StatelessWidget {
               Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));
               Navigator.pushNamed(context, AppRoutes.singleImagePage);},
           ),
-          ListTile(
+          /*ListTile(
             enabled: currentRoute != AppRoutes.waqiPage,
             title: const Text('Air Quality'),
             onTap: () {
               Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));
               Navigator.pushNamed(context, AppRoutes.waqiPage);
             },
-          ),
+          ),*/
         ],
       ),
     );

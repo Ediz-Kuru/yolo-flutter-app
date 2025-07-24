@@ -534,7 +534,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
         title: const Text('Single Image Detection'),
         leading: Showcase(
           key: _keyReturn,
-          description: "Clique ici pour ouvrir le menu de navigation",
+          description: "Cliquez ici pour ouvrir le menu de navigation",
           child: Builder(
             builder: (context) => IconButton(
               icon: const Icon(Icons.menu),
