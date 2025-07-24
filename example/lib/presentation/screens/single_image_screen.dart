@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:ultralytics_yolo/yolo.dart';
 import 'package:image/image.dart' as img;
 
@@ -29,6 +30,8 @@ class AirQualityData {
   final int? aqi;
   final City? city;
   final Map<String, Pollutant>? iaqi;
+
+
 
   AirQualityData({this.aqi, this.city, this.iaqi});
 
@@ -151,12 +154,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
 
 
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeYOLO();
-    _fetchAirQualityData(); // ← Ajout
-  }
+
 
 
   /// Initializes the YOLO model for inference
@@ -509,18 +507,49 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
     }
   }
 
+  final _keyResult = GlobalKey();
+  final _keyLoca = GlobalKey();
+  final _keyReload = GlobalKey();
+  final _keyInfo = GlobalKey();
+  final _keyReturn = GlobalKey();
+  BuildContext? MyContext;
+  @override
+  void initState() {
+    super.initState();
+    _initializeYOLO();
+    _fetchAirQualityData();
+
+    WidgetsBinding.instance!.addPostFrameCallback((_) {ShowCaseWidget.of(MyContext!)!.startShowCase([_keyResult, _keyLoca, _keyReload, _keyInfo, _keyReturn]);
+      });}
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ShowCaseWidget(builder: (context) {
+      MyContext = context;
+      return Scaffold(
       appBar: AppBar(
         title: const Text('Single Image Inference'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Showcase(
+              key: _keyReturn,
+              targetPadding: const EdgeInsets.all(8),
+              description: "Cliquez ici pour retourner sur la page précèdente.",
+              targetShapeBorder: const CircleBorder(),
+              tooltipBackgroundColor: Colors.blueAccent,
+
+              child: const Icon(Icons.arrow_back)),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.help_outline),
+            icon: Showcase(
+                key: _keyInfo,
+                targetPadding: const EdgeInsets.all(8),
+                description: "Plus d'informations sur le fonctionnement de la page.",
+                targetShapeBorder: const CircleBorder(),
+                tooltipBackgroundColor: Colors.blueAccent,
+
+                child: const Icon(Icons.help_outline)),
             onPressed: () {
               showDialog(
                 context: context,
@@ -549,7 +578,15 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Showcase(
+
+                key: _keyReload,
+                targetPadding: const EdgeInsets.all(8),
+                description: "Pour recharger la qualité de l'air dans les alentours si nécessaire.",
+                targetShapeBorder: const CircleBorder(),
+                tooltipBackgroundColor: Colors.blueAccent,
+
+                child: const Icon(Icons.refresh)),
             onPressed: _fetchAirQualityData,
           ),
         ],
@@ -570,59 +607,74 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                 style: const TextStyle(color: Colors.red),
               )
             else if (_airQualityData != null)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Qualité de l’air :',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.help_outline, size: 20),
-                          tooltip: 'Qu’est-ce que la qualité de l’air ?',
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Qualité de l’air'),
-                                content: const Text(
-                                  'L’indice de qualité de l’air (AQI) est une mesure standard '
-                                      'qui indique la pollution de l’air dans votre région. '
-                                      'Plus la valeur est élevée, plus la qualité de l’air est mauvaise.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(context).pop(),
-                                    child: const Text('Fermer'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    Text('Lieu : ${_airQualityData!.city?.name ?? 'Inconnu'}'),
-                    Text('AQI : ${_airQualityData!.aqi ?? 'N/A'}'),
-                    const SizedBox(height: 8),
-                    const Text('Polluants :'),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 16, // espace horizontal entre colonnes
-                      runSpacing: 8, // espace vertical entre lignes
-                      children: _airQualityData!.iaqi?.entries.map((e) {
-                        return SizedBox(
-                          width: MediaQuery.of(context).size.width / 2 - 24, // pour faire 2 colonnes
-                          child: Text(
-                            '${e.key.toUpperCase()} : ${e.value.value?.toStringAsFixed(2) ?? 'N/A'}',
+                Showcase(
+                  key: _keyLoca,
+                  //targetPadding: const EdgeInsets.all(8),
+                  description: "Quand la localisation est activée, celle-ci sera utilisée pour afficher la qualité de l'air dans les alentours.",
+                  //targetShapeBorder: const CircleBorder(),
+                  tooltipBackgroundColor: Colors.blueAccent,
+
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Qualité de l’air :',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           ),
-                        );
-                      }).toList() ?? [],
-                    ),
-                  ],
+                          IconButton(
+                            icon: const Icon(Icons.help_outline, size: 20),
+                            tooltip: 'Qu’est-ce que la qualité de l’air ?',
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Qualité de l’air'),
+                                  content: const Text(
+                                    'L’indice de qualité de l’air (AQI) est une mesure standard '
+                                        'qui indique la pollution de l’air dans votre région. '
+                                        'Plus la valeur est élevée, plus la qualité de l’air est mauvaise.'
+                                        '\n Liste des componants dans l’air qui peuvent etre détectés:'
+                                        '\n, H: Humidité, O3: Ozone, PM2.5: Particules fines de diamètres ≤ 2.5 µm'
+                                        ', W: Vitesse du vent en m/s, NO2: Dioxyde d’azote, P: Pression atmosphérique'
+                                        ', T: Température en °C, WG: Rafales de vent (Wind Gust)'
+                                    ,
+
+
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(),
+                                      child: const Text('Fermer'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                      Text('Lieu : ${_airQualityData!.city?.name ?? 'Inconnu'}'),
+                      Text('AQI : ${_airQualityData!.aqi ?? 'N/A'}'),
+                      const SizedBox(height: 8),
+                      const Text('Polluants :'),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 16, // espace horizontal entre colonnes
+                        runSpacing: 8, // espace vertical entre lignes
+                        children: _airQualityData!.iaqi?.entries.map((e) {
+                          return SizedBox(
+                            width: MediaQuery.of(context).size.width / 2 - 24, // pour faire 2 colonnes
+                            child: Text(
+                              '${e.key.toUpperCase()} : ${e.value.value?.toStringAsFixed(2) ?? 'N/A'}',
+                            ),
+                          );
+                        }).toList() ?? [],
+                      ),
+                    ],
+                  ),
                 ),
 
             if (_airQualityData != null)
@@ -638,11 +690,19 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
             const SizedBox(height: 20),
 
             Center(
-              child: ElevatedButton(
-                onPressed: _pickAndPredict,
-                child: const Text('Select Image'),
+              child: Showcase(
+                key: _keyResult,
+                targetPadding: const EdgeInsets.all(20),
+                description: "Cliquez ici et sélectionnez une image afin qu'elle soit analysée.",
+                targetShapeBorder: const CircleBorder(),
+                tooltipBackgroundColor: Colors.blueAccent,
+                child: ElevatedButton(
+                  onPressed: _pickAndPredict,
+                  child: const Text('Select Image'),
+                ),
               ),
             ),
+
 
             const SizedBox(height: 10),
 
@@ -745,6 +805,8 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
           ],
         ),
       ),
+    );
+    }
     );
   }
 }
