@@ -10,18 +10,20 @@ import 'package:ultralytics_yolo_example/waqi.dart';
 
 import 'drawer.dart';
 
-void main() => runApp(const MyApp());
+void main() => runApp( MyApp());
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+  MyApp({super.key});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorObservers: [routeObserver],
       initialRoute: AppRoutes.mainPage,
       routes: {
         AppRoutes.mainPage: (context) => const YOLODemo(),
         AppRoutes.waqiPage: (context) => const AirQualityPage(),
+        AppRoutes.singleImagePage: (context) => const SingleImageScreen(),
       },
     );
   }
@@ -32,7 +34,7 @@ class YOLODemo extends StatefulWidget {
   _YOLODemoState createState() => _YOLODemoState();
 }
 
-class _YOLODemoState extends State<YOLODemo> {
+class _YOLODemoState extends State<YOLODemo> with RouteAware{
   // The classifier instance for processing frames received from the stream.
 
   final _keyQuestion = GlobalKey();
@@ -62,6 +64,28 @@ class _YOLODemoState extends State<YOLODemo> {
         (_) => ShowCaseWidget.of(context)!.startShowCase([_keyResults, _keyQuestion, _keySecPage])
     );
 
+  }
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+  @override
+  Future<void> didPushNext()
+  async {
+    await _yoloViewController.stop();
+  }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  Future<void> didPopNext() async {
+    // Coming back to this page
+    await _yoloViewController.start();
+    await loadYOLOModel();
   }
 
   Future<void> loadYOLOModel() async {

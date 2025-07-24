@@ -1,9 +1,5 @@
 // drawer.dart
 import 'package:flutter/material.dart';
-import 'package:ultralytics_yolo_example/presentation/screens/single_image_screen.dart';
-import 'package:ultralytics_yolo_example/waqi.dart';
-
-
 // Define route names for clarity and maintainability
 class AppRoutes {
   static const String mainPage = '/'; // Or '/main' if you have a splash screen, etc.
@@ -37,33 +33,22 @@ class AppDrawer extends StatelessWidget {
             title: const Text('Detector'),
             onTap: () {
               // Update the state of the app.
-              Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, AppRoutes.mainPage);
-              // ...
+              Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));              // ...
             },
           ),
           ListTile(
+            enabled: currentRoute != AppRoutes.singleImagePage,
             title: const Text('Single Image Detection'),
             onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SingleImageScreen(),
-                ),
-              );
-            },
+              Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));
+              Navigator.pushNamed(context, AppRoutes.singleImagePage);},
           ),
           ListTile(
-            title: const Text('Air'),
+            enabled: currentRoute != AppRoutes.waqiPage,
+            title: const Text('Air Quality'),
             onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AirQualityPage(),
-                ),
-              );
+              Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));
+              Navigator.pushNamed(context, AppRoutes.waqiPage);
             },
           ),
         ],

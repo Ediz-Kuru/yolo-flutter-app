@@ -26,6 +26,8 @@ import 'package:geolocator/geolocator.dart'; // Pour le GPS
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:ultralytics_yolo_example/drawer.dart';
+
 class AirQualityData {
   final int? aqi;
   final City? city;
@@ -800,8 +802,6 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                   ),
                 ],
               ),
-
-
           ],
         ),
       ),
