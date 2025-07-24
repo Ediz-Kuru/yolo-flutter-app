@@ -530,18 +530,21 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
       MyContext = context;
       return Scaffold(
       appBar: AppBar(
-        title: const Text('Single Image Inference'),
-        leading: IconButton(
-          icon: Showcase(
-              key: _keyReturn,
-              targetPadding: const EdgeInsets.all(8),
-              description: "Cliquez ici pour retourner sur la page précèdente.",
-              targetShapeBorder: const CircleBorder(),
-              tooltipBackgroundColor: Colors.blueAccent,
-
-              child: const Icon(Icons.arrow_back)),
-          onPressed: () => Navigator.of(context).pop(),
+        automaticallyImplyLeading: false,
+        title: const Text('Single Image Detection'),
+        leading: Showcase(
+          key: _keyReturn,
+          description: "Clique ici pour ouvrir le menu de navigation",
+          child: Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () {
+                Scaffold.of(context).openDrawer();
+              },
+            ),
+          ),
         ),
+
         actions: [
           IconButton(
             icon: Showcase(
@@ -805,6 +808,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
           ],
         ),
       ),
+        drawer:  const AppDrawer(),
     );
     }
     );

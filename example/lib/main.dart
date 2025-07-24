@@ -119,7 +119,20 @@ class _YOLODemoState extends State<YOLODemo> with RouteAware{
         return
         Scaffold(
         appBar: AppBar(
-        title: const Text('YOLO Live Classification'),
+          automaticallyImplyLeading: false,
+          title: const Text('YOLO Live Classification'),
+          leading: Showcase(
+            key: _keySecPage,
+            description: "Clique ici pour ouvrir le menu de navigation",
+            child: Builder(
+              builder: (context) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () {
+                  Scaffold.of(context).openDrawer();
+                },
+              ),
+            ),
+          ),
           actions: [
             IconButton(
               icon: Showcase(
@@ -168,13 +181,7 @@ class _YOLODemoState extends State<YOLODemo> with RouteAware{
                   await loadYOLOModel();
                 });
               },
-              icon: Showcase(
-                  key: _keySecPage,
-                  targetPadding: const EdgeInsets.all(8),
-                  description: "Pour accèder à la page d'analyse d'image.",
-                  targetShapeBorder: const CircleBorder(),
-                  tooltipBackgroundColor: Colors.blueAccent,
-                  child: const Icon(Icons.image)),
+              icon: const Icon(Icons.image),
             ),
           ],
 
