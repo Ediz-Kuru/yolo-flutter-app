@@ -25,6 +25,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   plugin_platform_interface: ^2.0.2
 
 dev_dependencies:
