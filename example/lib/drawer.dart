@@ -1,12 +1,9 @@
-// drawer.dart
 import 'package:flutter/material.dart';
-// Define route names for clarity and maintainability
+import 'package:ultralytics_yolo_example/l10n/app_localizations.dart';
+
 class AppRoutes {
-  static const String mainPage = '/'; // Or '/main' if you have a splash screen, etc.
-  static const String waqiPage = '/waqi';
+  static const String mainPage = '/';
   static const String singleImagePage = '/single-image';
-// Add other routes here
-// static const String settingsPage = '/settings';
 }
 
 class AppDrawer extends StatelessWidget {
@@ -15,44 +12,120 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String? currentRoute = ModalRoute.of(context)?.settings.name;
+    final theme = Theme.of(context);
 
     return Drawer(
-      // Add a ListView to the drawer. This ensures the user can scroll
-      // through the options in the drawer if there isn't enough vertical
-      // space to fit everything.
-      child: ListView(
-        // Important: Remove any padding from the ListView.
-        padding: EdgeInsets.zero,
+      child: Column(
         children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(color: Colors.blue),
-            child: Text('Drawer Header'),
+          DrawerHeader(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primaryContainer,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 32,
+                  backgroundColor: theme.colorScheme.onPrimaryContainer,
+                  child: ClipOval(
+                    child: Image.asset(
+                      fit: BoxFit.cover,
+                      'assets/img.png'
+                          '',
+                      width: 64,
+                      height: 64,
+                    ),
+                  ),
+                  // child: Icon(Icons.sunny, size: 40, color: theme.colorScheme.primary),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  AppLocalizations.of(context)!.leafDetectorTitle,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: theme.colorScheme.onPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
-          ListTile(
-            enabled: currentRoute != AppRoutes.mainPage,
-            title: const Text('Detector'),
-            onTap: () {
-              // Update the state of the app.
-              Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));              // ...
-            },
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.camera,
+                  label: AppLocalizations.of(context)!.detector,
+                  selected: currentRoute == AppRoutes.mainPage,
+                  onTap: () {
+                    Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.image,
+                  label: AppLocalizations.of(context)!.singleImageDetectionTitle,
+                  selected: currentRoute == AppRoutes.singleImagePage,
+                  onTap: () {
+                    Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));
+                    Navigator.pushNamed(context, AppRoutes.singleImagePage);
+                  },
+                ),
+                /* Uncomment if needed:
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.air,
+                  label: 'Air Quality',
+                  selected: currentRoute == AppRoutes.waqiPage,
+                  onTap: () {
+                    Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));
+                    Navigator.pushNamed(context, AppRoutes.waqiPage);
+                  },
+                ),
+                */
+              ],
+            ),
           ),
-          ListTile(
-            enabled: currentRoute != AppRoutes.singleImagePage,
-            title: const Text('Single Image Detection'),
-            onTap: () {
-              Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));
-              Navigator.pushNamed(context, AppRoutes.singleImagePage);},
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Text(
+              'v1.0.0',
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+            ),
           ),
-          /*ListTile(
-            enabled: currentRoute != AppRoutes.waqiPage,
-            title: const Text('Air Quality'),
-            onTap: () {
-              Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));
-              Navigator.pushNamed(context, AppRoutes.waqiPage);
-            },
-          ),*/
         ],
       ),
+    );
+  }
+
+  Widget _buildDrawerItem(
+      BuildContext context, {
+        required IconData icon,
+        required String label,
+        required bool selected,
+        required VoidCallback onTap,
+      }) {
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: Icon(icon, color: selected ? theme.colorScheme.primary : null),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          color: selected ? theme.colorScheme.primary : null,
+        ),
+      ),
+      selected: selected,
+      selectedTileColor: theme.colorScheme.primary.withAlpha((0.12 * 255).round()),
+      hoverColor: theme.colorScheme.primary.withAlpha((0.08 * 255).round()),
+      onTap: onTap,
     );
   }
 }

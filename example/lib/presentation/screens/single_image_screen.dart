@@ -1,80 +1,23 @@
 // Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
 import 'dart:io';
-import 'package:archive/archive_io.dart';
 import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:ultralytics_yolo/yolo.dart';
 import 'package:image/image.dart' as img;
-
-
-/// A screen that demonstrates YOLO inference on a single image.
-///
-/// This screen allows users to:
-/// - Pick an image from the gallery
-/// - Run YOLO inference on the selected image
-/// - View detection results and annotated image
-///
-///
 
 import 'package:geolocator/geolocator.dart'; // Pour le GPS
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:ultralytics_yolo_example/drawer.dart';
+import 'package:ultralytics_yolo_example/l10n/app_localizations.dart';
 
-class AirQualityData {
-  final int? aqi;
-  final City? city;
-  final Map<String, Pollutant>? iaqi;
-
-
-
-  AirQualityData({this.aqi, this.city, this.iaqi});
-
-  factory AirQualityData.fromJson(Map<String, dynamic> json) {
-    if (json['status'] != 'ok') {
-      debugPrint('API status is not OK: ${json['data']}');
-      return AirQualityData();
-    }
-
-    final data = json['data'] as Map<String, dynamic>;
-
-    Map<String, Pollutant>? iaqiData;
-    if (data['iaqi'] != null) {
-      iaqiData = (data['iaqi'] as Map).map(
-            (key, value) => MapEntry(key, Pollutant.fromJson(value)),
-      ).cast<String, Pollutant>();
-    }
-
-    return AirQualityData(
-      aqi: data['aqi'] as int?,
-      city: data['city'] != null ? City.fromJson(data['city']) : null,
-      iaqi: iaqiData,
-    );
-  }
-}
-
-class City {
-  final String? name;
-  City({this.name});
-  factory City.fromJson(Map<String, dynamic> json) {
-    return City(name: json['name'] as String?);
-  }
-}
-
-class Pollutant {
-  final double? value;
-  Pollutant({this.value});
-  factory Pollutant.fromJson(Map<String, dynamic> json) {
-    return Pollutant(value: (json['v'] as num?)?.toDouble());
-  }
-}
+import '../../waqi.dart';
 
 class SingleImageScreen extends StatefulWidget {
   const SingleImageScreen({super.key});
@@ -101,20 +44,9 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
     task: YOLOTask.classify,
     useMultiInstance: true,
   );
-  String _modelPathForYOLO =
+  final String _modelPathForYOLO =
       'yolo11n'; // Default asset path for non-iOS or if local copy fails
   bool _isModelReady = false;
-
-  // Name of the .mlpackage directory in local storage (after unzipping)
-  final String _mlPackageDirName =
-      'yolo11n-seg.mlpackage'; // Changed to yolo11n
-  // Name of the zip file in assets (e.g., assets/models/yolo11n.mlpackage.zip)
-  final String _mlPackageZipAssetName =
-      'yolo11n-seg.mlpackage.zip'; // Changed to yolo11n
-
-
-
-
 
   /// Coupe une image à partir des coordonnées (x1, y1, x2, y2).
   /// [imageBytes] : bytes de l'image complète.
@@ -152,36 +84,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
   }
   List<Uint8List> _croppedImages = [];
 
-
-
-
-
-
-
-
-  /// Initializes the YOLO model for inference
-  ///
-  /// For iOS:
-  /// - Copies the .mlpackage from assets to local storage
-  /// - Uses the local path for model loading
-  /// For other platforms:
-  /// - Uses the default asset path
   Future<void> _initializeYOLO() async {
-    if (Platform.isIOS) {
-      try {
-        final localPath = await _copyMlPackageFromAssets();
-        if (localPath != null) {
-          _modelPathForYOLO = localPath;
-          debugPrint('iOS: Using local .mlpackage path: $_modelPathForYOLO');
-        } else {
-          debugPrint(
-            'iOS: Failed to copy .mlpackage, using default asset path.',
-          );
-        }
-      } catch (e) {
-        debugPrint('Error during .mlpackage copy for iOS: $e');
-      }
-    }
 
     _yolo = YOLO(
       modelPath: _modelPathForYOLO,
@@ -263,154 +166,33 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
   }
 
 
-  /// Copies the .mlpackage from assets to local storage
-  ///
-  /// This is required for iOS to properly load the model.
-  /// Returns the path to the local .mlpackage directory if successful,
-  /// null otherwise.
-  Future<String?> _copyMlPackageFromAssets() async {
-    try {
-      final Directory appDocDir = await getApplicationDocumentsDirectory();
-      final String localMlPackageDirPath =
-          '${appDocDir.path}/$_mlPackageDirName';
-      final Directory localMlPackageDir = Directory(localMlPackageDirPath);
-
-      final manifestFile = File('$localMlPackageDirPath/Manifest.json');
-      if (await localMlPackageDir.exists() && await manifestFile.exists()) {
-        debugPrint(
-          '.mlpackage directory and Manifest.json already exist and are correctly placed: $localMlPackageDirPath',
-        );
-        return localMlPackageDirPath;
-      } else {
-        if (await localMlPackageDir.exists()) {
-          debugPrint(
-            'Manifest.json not found at expected location or .mlpackage directory is incomplete. Will attempt to re-extract.',
-          );
-          // To ensure a clean state, you might consider deleting the directory first:
-          // await localMlPackageDir.delete(recursive: true);
-          // debugPrint('Deleted existing incomplete directory: $localMlPackageDirPath');
-        }
-        // Ensure the base directory exists before extraction
-        if (!await localMlPackageDir.exists()) {
-          await localMlPackageDir.create(recursive: true);
-          debugPrint(
-            'Created .mlpackage directory for extraction: $localMlPackageDirPath',
-          );
-        }
-      }
-
-      final String assetZipPath = 'assets/models/$_mlPackageZipAssetName';
-
-      debugPrint(
-        'Attempting to copy and unzip $assetZipPath to $localMlPackageDirPath',
-      );
-
-      final ByteData zipData = await rootBundle.load(assetZipPath);
-      final List<int> zipBytes = zipData.buffer.asUint8List(
-        zipData.offsetInBytes,
-        zipData.lengthInBytes,
-      );
-
-      final archive = ZipDecoder().decodeBytes(zipBytes);
-
-      for (final fileInArchive in archive) {
-        final String originalFilenameInZip = fileInArchive.name;
-        String filenameForExtraction = originalFilenameInZip;
-
-        final String expectedPrefix = '$_mlPackageDirName/';
-        if (originalFilenameInZip.startsWith(expectedPrefix)) {
-          filenameForExtraction = originalFilenameInZip.substring(
-            expectedPrefix.length,
-          );
-        }
-
-        if (filenameForExtraction.isEmpty) {
-          debugPrint(
-            'Skipping empty filename after prefix strip: $originalFilenameInZip',
-          );
-          continue;
-        }
-
-        final filePath = '${localMlPackageDir.path}/$filenameForExtraction';
-
-        if (fileInArchive.isFile) {
-          final data = fileInArchive.content as List<int>;
-          final localFile = File(filePath);
-          try {
-            await localFile.parent.create(recursive: true);
-            await localFile.writeAsBytes(data);
-            debugPrint(
-              'Extracted file: $filePath (Size: ${data.length} bytes)',
-            );
-            if (filenameForExtraction == 'Manifest.json') {
-              debugPrint('Manifest.json was written to $filePath');
-            }
-          } catch (e) {
-            debugPrint('!!! Failed to write file $filePath: $e');
-          }
-        } else {
-          final localDir = Directory(filePath);
-          try {
-            await localDir.create(recursive: true);
-            debugPrint('Created directory: $filePath');
-          } catch (e) {
-            debugPrint('!!! Failed to create directory $filePath: $e');
-          }
-        }
-      }
-
-      final manifestFileAfterExtraction = File(
-        '$localMlPackageDirPath/Manifest.json',
-      );
-      if (await manifestFileAfterExtraction.exists()) {
-        debugPrint(
-          'CONFIRMED: Manifest.json exists at ${manifestFileAfterExtraction.path}',
-        );
-      } else {
-        debugPrint(
-          'ERROR: Manifest.json DOES NOT exist at ${manifestFileAfterExtraction.path} after extraction loop.',
-        );
-      }
-
-      debugPrint(
-        'Successfully finished attempt to unzip .mlpackage to local storage: $localMlPackageDirPath',
-      );
-      return localMlPackageDirPath;
-    } catch (e) {
-      debugPrint('Error in _copyMlPackageFromAssets (outer try-catch): $e');
-      return null;
-    }
-  }
-
   String analyzeAQIAndDiseaseLink(int? aqi) {
-    if (aqi == null) return "AQI inconnu. Impossible d’évaluer le lien avec la maladie.";
+    if (aqi == null) return AppLocalizations.of(context)!.aqiAnalysisUnknown;
 
     String quality;
     double probability;
 
     if (aqi <= 50) {
-      quality = "Bonne";
+      quality = AppLocalizations.of(context)!.airQualityGood;
       probability = 0.05;
     } else if (aqi <= 100) {
-      quality = "Modérée";
+      quality = AppLocalizations.of(context)!.airQualityModerate;
       probability = 0.10;
     } else if (aqi <= 150) {
-      quality = "Mauvaise pour les groupes sensibles";
+      quality = AppLocalizations.of(context)!.airQualityUnhealthySensitive;
       probability = 0.25;
     } else if (aqi <= 200) {
-      quality = "Mauvaise";
+      quality = AppLocalizations.of(context)!.airQualityUnhealthy;
       probability = 0.45;
     } else if (aqi <= 300) {
-      quality = "Très mauvaise";
+      quality = AppLocalizations.of(context)!.airQualityVeryUnhealthy;
       probability = 0.65;
     } else {
-      quality = "Dangereuse";
+      quality = AppLocalizations.of(context)!.airQualityHazardous;
       probability = 0.85;
     }
+    return AppLocalizations.of(context)!.aqiAnalysisPattern(aqi, (probability * 100).toStringAsFixed(0), quality);
 
-    return "Qualité de l’air : $quality (AQI = $aqi). "
-        "Il y a environ ${(probability * 100).toStringAsFixed(0)}% de chances "
-        "que cette pollution soit un facteur ayant contribué à la potentielle maladie observée sur la feuille.";
   }
 
 
@@ -513,47 +295,40 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
   final _keyLoca = GlobalKey();
   final _keyReload = GlobalKey();
   final _keyInfo = GlobalKey();
-  final _keyReturn = GlobalKey();
-  BuildContext? MyContext;
+  BuildContext? myContext;
   @override
   void initState() {
     super.initState();
     _initializeYOLO();
     _fetchAirQualityData();
 
-    WidgetsBinding.instance!.addPostFrameCallback((_) {ShowCaseWidget.of(MyContext!)!.startShowCase([_keyResult, _keyLoca, _keyReload, _keyInfo, _keyReturn]);
-      });}
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (myContext != null && mounted) {
+        ShowCaseWidget.of(myContext!).startShowCase([
+          _keyResult,
+          _keyLoca,
+          _keyReload,
+          _keyInfo,
+        ]);
+      }
+    });
+
+
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ShowCaseWidget(builder: (context) {
-      MyContext = context;
+      myContext = context;
       return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('Single Image Detection'),
-        leading: Showcase(
-          key: _keyReturn,
-          description: "Cliquez ici pour ouvrir le menu de navigation",
-          child: Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            ),
-          ),
-        ),
-
+        title: Text(AppLocalizations.of(context)!.singleImageDetectionTitle),
         actions: [
           IconButton(
             icon: Showcase(
                 key: _keyInfo,
                 targetPadding: const EdgeInsets.all(8),
-                description: "Plus d'informations sur le fonctionnement de la page.",
+                description: AppLocalizations.of(context)!.helpButtonTooltip,
                 targetShapeBorder: const CircleBorder(),
-                tooltipBackgroundColor: Colors.blueAccent,
-
                 child: const Icon(Icons.help_outline)),
             onPressed: () {
               showDialog(
@@ -561,17 +336,11 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                 builder: (BuildContext context) {
                   return AlertDialog(
                     title: const Text('Aide'),
-                    content: const Text(
-                      'Cette application utilise un modèle YOLO pour classifier une image sélectionné.\n\n'
-                          '1- Acceptez les demandes de permissions de localisation et accès aux fichiers pour le fonctionnement de l’application. \n'
-                          '2- La localisation est utilisée  pour détecter la qualité de l’air dans les environs. Plus le AQI est élévé, moins l’air est bon. Et plus y a des chances que cela soit responsable pour la feuille malade.. \n'
-                          '3- Cliquez sur le bouton ’Select Image’ et choisissez une image à analyser. \n'
-                          '4- Lorsqu’une feuille est détectée, des boites apparaitront autours de la feuille et ses traces de maladies détectées. Le % affiché est la certitude du résultat.\n'
-                          '5- Plus bas est affiché le nom de la maladie détectée, sa certitude, et des images séparées pour chaque chose détectée. \n',
-                    ),
+                    content:
+                    Text(AppLocalizations.of(context)!.helpDialogContent),
                     actions: [
                       TextButton(
-                        child: const Text('Fermer'),
+                        child: Text(AppLocalizations.of(context)!.helpDialogClose),
                         onPressed: () {
                           Navigator.of(context).pop();
                         },
@@ -587,9 +356,8 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
 
                 key: _keyReload,
                 targetPadding: const EdgeInsets.all(8),
-                description: "Pour recharger la qualité de l'air dans les alentours si nécessaire.",
+                description: AppLocalizations.of(context)!.reloadAirQualityTooltip,
                 targetShapeBorder: const CircleBorder(),
-                tooltipBackgroundColor: Colors.blueAccent,
 
                 child: const Icon(Icons.refresh)),
             onPressed: _fetchAirQualityData,
@@ -614,10 +382,8 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
             else if (_airQualityData != null)
                 Showcase(
                   key: _keyLoca,
-                  //targetPadding: const EdgeInsets.all(8),
-                  description: "Quand la localisation est activée, celle-ci sera utilisée pour afficher la qualité de l'air dans les alentours.",
-                  //targetShapeBorder: const CircleBorder(),
-                  tooltipBackgroundColor: Colors.blueAccent,
+
+                  description: AppLocalizations.of(context)!.locationEnabledDescription,
 
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,34 +391,23 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text(
-                            'Qualité de l’air :',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                           Text(
+                            AppLocalizations.of(context)!.airQualityLabel,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           IconButton(
                             icon: const Icon(Icons.help_outline, size: 20),
-                            tooltip: 'Qu’est-ce que la qualité de l’air ?',
+                            tooltip: AppLocalizations.of(context)!.airQualityHelpTooltip,
                             onPressed: () {
                               showDialog(
                                 context: context,
                                 builder: (context) => AlertDialog(
-                                  title: const Text('Qualité de l’air'),
-                                  content: const Text(
-                                    'L’indice de qualité de l’air (AQI) est une mesure standard '
-                                        'qui indique la pollution de l’air dans votre région. '
-                                        'Plus la valeur est élevée, plus la qualité de l’air est mauvaise.'
-                                        '\n Liste des componants dans l’air qui peuvent etre détectés:'
-                                        '\n, H: Humidité, O3: Ozone, PM2.5: Particules fines de diamètres ≤ 2.5 µm'
-                                        ', W: Vitesse du vent en m/s, NO2: Dioxyde d’azote, P: Pression atmosphérique'
-                                        ', T: Température en °C, WG: Rafales de vent (Wind Gust)'
-                                    ,
-
-
-                                  ),
+                                  title: Text(AppLocalizations.of(context)!.airQualityDialogTitle),
+                                  content: Text(AppLocalizations.of(context)!.airQualityDialogContent),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.of(context).pop(),
-                                      child: const Text('Fermer'),
+                                      child: Text(AppLocalizations.of(context)!.airQualityDialogClose),
                                     ),
                                   ],
                                 ),
@@ -661,10 +416,10 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                           ),
                         ],
                       ),
-                      Text('Lieu : ${_airQualityData!.city?.name ?? 'Inconnu'}'),
-                      Text('AQI : ${_airQualityData!.aqi ?? 'N/A'}'),
+                      Text('Lieu : ${_airQualityData!.city?.name ?? AppLocalizations.of(context)!.locationUnknown}'),
+                      Text('AQI : ${_airQualityData!.aqi ?? AppLocalizations.of(context)!.aqiUnavailable}'),
                       const SizedBox(height: 8),
-                      const Text('Polluants :'),
+                      Text(AppLocalizations.of(context)!.pollutantsLabel),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 16, // espace horizontal entre colonnes
@@ -698,9 +453,8 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
               child: Showcase(
                 key: _keyResult,
                 targetPadding: const EdgeInsets.all(20),
-                description: "Cliquez ici et sélectionnez une image afin qu'elle soit analysée.",
+                description: AppLocalizations.of(context)!.selectImageDescription,
                 targetShapeBorder: const CircleBorder(),
-                tooltipBackgroundColor: Colors.blueAccent,
                 child: ElevatedButton(
                   onPressed: _pickAndPredict,
                   child: const Text('Select Image'),
@@ -716,10 +470,10 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    CircularProgressIndicator(),
-                    SizedBox(width: 10),
-                    Text("Model loading..."),
+                  children:  [
+                    const CircularProgressIndicator(),
+                    const SizedBox(width: 10),
+                    Text(AppLocalizations.of(context)!.modelLoading),
                   ],
                 ),
               ),
@@ -748,7 +502,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
 
             const SizedBox(height: 12),
 
-            const Text('Classifications:'),
+             Text(AppLocalizations.of(context)!.classificationsTitle),
             ..._classifications.map((d) {
               final className = (d['className'] ?? d['class'] ?? 'Unknown').toString();
               final confidence = d['confidence'] != null
@@ -764,7 +518,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 12),
-                  const Text('Détections :'),
+                  Text(AppLocalizations.of(context)!.detectionsTitle),
                   SizedBox(
                     height: 120,
                     child: ListView.builder(
@@ -791,9 +545,9 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   _detections.length > index
-                                      ? '${_detections[index]['className'] ?? _detections[index]['class'] ?? 'Unknown'} '
+                                      ? '${_detections[index]['className'] ?? _detections[index]['class'] ?? AppLocalizations.of(context)!.locationUnknown} '
                                       '(${((_detections[index]['confidence'] ?? 0) * 100).toStringAsFixed(1)}%)'
-                                      : 'Unknown',
+                                      : AppLocalizations.of(context)!.locationUnknown,
                                   style: const TextStyle(fontSize: 12),
                                 ),
                               ],
@@ -809,8 +563,6 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
         ),
       ),
         drawer:  const AppDrawer(),
-    );
-    }
     );
   }
 }
