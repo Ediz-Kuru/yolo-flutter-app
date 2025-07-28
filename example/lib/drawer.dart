@@ -78,18 +78,6 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pushNamed(context, AppRoutes.singleImagePage);
                   },
                 ),
-                /* Uncomment if needed:
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.air,
-                  label: 'Air Quality',
-                  selected: currentRoute == AppRoutes.waqiPage,
-                  onTap: () {
-                    Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));
-                    Navigator.pushNamed(context, AppRoutes.waqiPage);
-                  },
-                ),
-                */
               ],
             ),
           ),
@@ -113,19 +101,30 @@ class AppDrawer extends StatelessWidget {
         required VoidCallback onTap,
       }) {
     final theme = Theme.of(context);
+
+    final bool isDisabled = selected; // disable tap when selected
+
+    // Use onSurface with alpha for disabled color
+    final Color disabledColor = theme.colorScheme.onSurface.withAlpha((0.38 * 255).round());
+
+    final Color iconColor = isDisabled ? disabledColor : theme.colorScheme.primary;
+    final Color textColor = isDisabled ? disabledColor : theme.colorScheme.primary;
+
     return ListTile(
-      leading: Icon(icon, color: selected ? theme.colorScheme.primary : null),
+      leading: Icon(icon, color: iconColor),
       title: Text(
         label,
         style: TextStyle(
           fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-          color: selected ? theme.colorScheme.primary : null,
+          color: textColor,
         ),
       ),
       selected: selected,
       selectedTileColor: theme.colorScheme.primary.withAlpha((0.12 * 255).round()),
       hoverColor: theme.colorScheme.primary.withAlpha((0.08 * 255).round()),
-      onTap: onTap,
+      onTap: isDisabled ? null : onTap,
     );
   }
+
+
 }
