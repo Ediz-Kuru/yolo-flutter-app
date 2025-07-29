@@ -245,13 +245,8 @@ class _YOLODemoState extends State<YOLODemo> with RouteAware{
               description: AppLocalizations.of(context)!.quickAccessDescription,
               child: IconButton(
                 onPressed: () async {
-                  await _yoloViewController.stop();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SingleImageScreen()),
-                  ).then((_) async {
-                    await _yoloViewController.start();
-                  });
+                  Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));
+                  Navigator.pushNamed(context, AppRoutes.singleImagePage);
                 },
                 icon: const Icon(Icons.image),
               ),

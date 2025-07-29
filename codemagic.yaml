@@ -1,0 +1,13 @@
+workflows:
+  ios-example-build:
+    name: Build iOS Example
+    environment:
+      flutter: stable
+      xcode: latest
+    working_directory: example
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+    build:
+      ios:
+        export_options: ExportOptions.plist
