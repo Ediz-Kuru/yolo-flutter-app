@@ -29,7 +29,6 @@ class SingleImageScreen extends StatefulWidget {
 class _SingleImageScreenState extends State<SingleImageScreen> {
   final _picker = ImagePicker();
   List<Map<String, dynamic>> _detections = [];
-  List<Map<String, dynamic>> _classifications = [];
   Uint8List? _imageBytes;
   Uint8List? _annotatedImage;
   AirQualityData? _airQualityData;
@@ -39,11 +38,6 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
 
 
   late YOLO _yolo;
-  final YOLO _classifier = YOLO(
-    modelPath: "yolo11n-cls",
-    task: YOLOTask.classify,
-    useMultiInstance: true,
-  );
   final String _modelPathForYOLO =
       'yolo11n'; // Default asset path for non-iOS or if local copy fails
   bool _isModelReady = false;
@@ -94,7 +88,6 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
 
     try {
       await _yolo.loadModel();
-      await _classifier.loadModel();
       if (mounted) {
         setState(() {
           _isModelReady = true;
@@ -242,7 +235,6 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
 
     final bytes = await file.readAsBytes();
     final detectionResults = await _yolo.predict(bytes);
-    final classificationResults = await _classifier.predict(bytes);
 
     if (mounted) {
       setState(() {
@@ -268,14 +260,9 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
             }
           }).toList();
 
-          _classifications = List<Map<String, dynamic>>.from(
-            classificationResults['detections'],
-          );
-
         } else {
           _detections = [];
           _croppedImages = [];
-          _classifications = [];
         }
 
 
@@ -505,16 +492,6 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                 child: Image.memory(_imageBytes!),
               ),
 
-            const SizedBox(height: 12),
-
-             Text(AppLocalizations.of(context)!.classificationsTitle),
-            ..._classifications.map((d) {
-              final className = (d['className'] ?? d['class'] ?? 'Unknown').toString();
-              final confidence = d['confidence'] != null
-                  ? (d['confidence'] * 100).toStringAsFixed(1)
-                  : '?';
-              return Text('$className ($confidence%)');
-            }),
 
             const SizedBox(height: 10),
 
