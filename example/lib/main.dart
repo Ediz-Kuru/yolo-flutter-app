@@ -239,18 +239,7 @@ class _YOLODemoState extends State<YOLODemo> with RouteAware{
                 title: AppLocalizations.of(context)!.help,
                 description: AppLocalizations.of(context)!.helpDescription,
                 child: IconButton(onPressed: restartTutorial, icon: const Icon(Icons.help))),
-            Showcase(
-              key: _imageButtonKey,
-              title: AppLocalizations.of(context)!.quickAccess,
-              description: AppLocalizations.of(context)!.quickAccessDescription,
-              child: IconButton(
-                onPressed: () async {
-                  Navigator.popUntil(context, ModalRoute.withName(AppRoutes.mainPage));
-                  Navigator.pushNamed(context, AppRoutes.singleImagePage);
-                },
-                icon: const Icon(Icons.image),
-              ),
-            ),
+
           ],
 
 
