@@ -355,6 +355,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Click here and select an image to be analyzed.'**
   String get selectImageDescription;
+
+  /// No description provided for @galleryPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission denied. Unable to open gallery.'**
+  String get galleryPermissionDenied;
 }
 
 class _AppLocalizationsDelegate

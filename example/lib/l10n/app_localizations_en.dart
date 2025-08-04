@@ -145,4 +145,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get selectImageDescription =>
       'Click here and select an image to be analyzed.';
+
+  @override
+  String get galleryPermissionDenied =>
+      'Permission denied. Unable to open gallery.';
 }

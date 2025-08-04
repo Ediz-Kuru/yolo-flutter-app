@@ -44,6 +44,6 @@
   "detectionsTitle": "Détections :",
   "locationEnabledDescription": "Quand la localisation est activée, celle-ci sera utilisée pour afficher la qualité de l'air dans les alentours.",
 
-  "selectImageDescription": "Cliquez ici et sélectionnez une image afin qu'elle soit analysée."
-
+  "selectImageDescription": "Cliquez ici et sélectionnez une image afin qu'elle soit analysée.",
+  "galleryPermissionDenied": "Permission refusée. Impossible d’ouvrir la galerie."
 }

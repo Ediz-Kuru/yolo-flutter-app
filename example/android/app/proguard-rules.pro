@@ -14,8 +14,11 @@
 # Keep TensorFlow Lite classes
 -keep class org.tensorflow.** { *; }
 -keep interface org.tensorflow.** { *; }
+-keep class com.ultralytics.** { *; }
+-dontwarn org.tensorflow.**
 
 # Keep native methods
 -keepclasseswithmembernames class * {
     native <methods>;
 }
+

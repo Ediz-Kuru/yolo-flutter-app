@@ -1,7 +1,7 @@
 // Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
-import 'dart:io';
 import 'package:easy_image_viewer/easy_image_viewer.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -37,11 +37,10 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
   final String _apiKey = '30c439655961e0b68355453e7665cdfebbfd51cb';
 
 
-  late YOLO _yolo;
-  final String _modelPathForYOLO =
-      'yolo11n'; // Default asset path for non-iOS or if local copy fails
+  late YOLO yolo;
+ // Default asset path for non-iOS or if local copy fails
   bool _isModelReady = false;
-
+  bool loading = false;
   /// Coupe une image à partir des coordonnées (x1, y1, x2, y2).
   /// [imageBytes] : bytes de l'image complète.
   /// Retourne les bytes PNG de la sous-image.
@@ -78,32 +77,18 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
   }
   List<Uint8List> _croppedImages = [];
 
-  Future<void> _initializeYOLO() async {
+  Future<void> loadYolo() async {
 
-    _yolo = YOLO(
-      modelPath: _modelPathForYOLO,
+    yolo = YOLO(
+      modelPath: "yolo11n",
       task: YOLOTask.detect,
       useMultiInstance: true,
     );
 
-    try {
-      await _yolo.loadModel();
-      if (mounted) {
+      await yolo.loadModel();
         setState(() {
           _isModelReady = true;
         });
-      }
-      debugPrint(
-        'YOLO model initialized. Path: $_modelPathForYOLO, Ready: $_isModelReady',
-      );
-    } catch (e) {
-      debugPrint('Error loading YOLO model: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading model: $e')));
-      }
-    }
   }
 
   Future<Position> _determinePosition() async {
@@ -187,8 +172,6 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
     return AppLocalizations.of(context)!.aqiAnalysisPattern(aqi, (probability * 100).toStringAsFixed(0), quality);
 
   }
-
-
   /// Picks an image from the gallery and runs inference
   ///
   /// This method:
@@ -196,6 +179,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
   /// - Runs YOLO inference on the selected image
   /// - Updates the UI with detection results and annotated image
   Future<void> _pickAndPredict() async {
+
     if (!_isModelReady) {
       debugPrint('Model not ready yet for inference.');
       if (mounted) {
@@ -206,20 +190,10 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
       return;
     }
 
-    PermissionStatus status;
-    if (Platform.isAndroid) {
-      status = await Permission.photos.status;
+    PermissionStatus status = await Permission.photos.status;
       if (status.isDenied || status.isPermanentlyDenied) {
         status = await Permission.photos.request();
       }
-    } else if (Platform.isIOS) {
-      status = await Permission.photos.status;
-      if (status.isDenied || status.isPermanentlyDenied) {
-        status = await Permission.photos.request();
-      }
-    } else {
-      status = PermissionStatus.granted;
-    }
 
     if (!status.isGranted) {
       if (mounted) {
@@ -232,51 +206,50 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
 
     final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
     if (file == null) return;
-
+    setState(() {
+      loading = true;
+      _detections = [];
+      _croppedImages = [];
+      _imageBytes = null;
+      _annotatedImage = null;
+      _detections.clear();
+    });
     final bytes = await file.readAsBytes();
-    final detectionResults = await _yolo.predict(bytes);
-
-    if (mounted) {
+    final detectionResults = await yolo.predict(bytes);
       setState(() {
         _imageBytes = bytes;
-        if (detectionResults.containsKey('boxes') &&
-            detectionResults['boxes'] is List &&
-            _imageBytes != null) {
-          _detections = List<Map<String, dynamic>>.from(detectionResults['boxes']);
-
-          // Générer les images cropped pour chaque détection
-          _croppedImages = _detections.map((d) {
-            try {
-              // Récupère et convertit les coordonnées en int
-              int x1 = (d['x1'] as num).toInt();
-              int y1 = (d['y1'] as num).toInt();
-              int x2 = (d['x2'] as num).toInt();
-              int y2 = (d['y2'] as num).toInt();
-
-              return cropImage(_imageBytes!, x1, y1, x2, y2);
-            } catch (e) {
-              debugPrint('Erreur cropping: $e');
-              return Uint8List(0); // image vide en cas d'erreur
-            }
-          }).toList();
-
-        } else {
-          _detections = [];
-          _croppedImages = [];
-        }
-
-
-        if (detectionResults.containsKey('annotatedImage') &&
-            detectionResults['annotatedImage'] is Uint8List) {
-          _annotatedImage = detectionResults['annotatedImage'] as Uint8List;
-        } else {
-          _annotatedImage = null;
-        }
-
-        _imageBytes = bytes;
+        cropBoxes(detectionResults);
+        _annotatedImage = detectionResults['annotatedImage'] as Uint8List;
+        loading = false;
       });
-    }
   }
+
+  void cropBoxes(Map<String, dynamic> detectionResults) {
+    final boxes = detectionResults['boxes'];
+
+    if (_imageBytes == null || boxes is! List) {
+      _detections = [];
+      _croppedImages = [];
+      return;
+    }
+
+    _detections = List<Map<String, dynamic>>.from(boxes);
+
+    _croppedImages = _detections.map((detection) {
+      try {
+        final x1 = (detection['x1'] as num).toInt();
+        final y1 = (detection['y1'] as num).toInt();
+        final x2 = (detection['x2'] as num).toInt();
+        final y2 = (detection['y2'] as num).toInt();
+
+        return cropImage(_imageBytes!, x1, y1, x2, y2);
+      } catch (e) {
+        debugPrint('Cropping error: $e');
+        return Uint8List(0); // return empty image on error
+      }
+    }).toList();
+  }
+
 
   final _keyResult = GlobalKey();
   final _keyLoca = GlobalKey();
@@ -286,7 +259,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeYOLO();
+    loadYolo();
     _fetchAirQualityData();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -404,7 +377,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                         ],
                       ),
                       Text(
-                          AppLocalizations.of(context)!.location + " : ${_airQualityData!.city?.name ?? AppLocalizations.of(context)!.locationUnknown}"
+                          "${AppLocalizations.of(context)!.location} : ${_airQualityData!.city?.name ?? AppLocalizations.of(context)!.locationUnknown}"
                       ),
                       Text(
                           'AQI : ${_airQualityData!.aqi ?? AppLocalizations.of(context)!.aqiUnavailable}'
@@ -449,7 +422,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                 targetShapeBorder: const CircleBorder(),
                 child: ElevatedButton(
                   onPressed: _pickAndPredict,
-                  child: const Text('Select Image'),
+                  child: Text(AppLocalizations.of(context)!.selectImageButton),
                 ),
               ),
             ),
@@ -458,19 +431,7 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
             const SizedBox(height: 10),
 
             if (!_isModelReady)
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children:  [
-                    const CircularProgressIndicator(),
-                    const SizedBox(width: 10),
-                    Text(AppLocalizations.of(context)!.modelLoading),
-                  ],
-                ),
-              ),
-
-            if (_annotatedImage != null)
+              const CircularProgressIndicator(),
               SizedBox(
                 height: 300,
                 width: double.infinity,
@@ -482,15 +443,10 @@ class _SingleImageScreenState extends State<SingleImageScreen> {
                       swipeDismissible: false,
                     );
                   },
-                  child: Image.memory(_annotatedImage!),
+                  child: _annotatedImage != null? Image.memory(_annotatedImage!):null
                 ),
-              )
-            else if (_imageBytes != null)
-              SizedBox(
-                height: 300,
-                width: double.infinity,
-                child: Image.memory(_imageBytes!),
               ),
+
 
 
             const SizedBox(height: 10),

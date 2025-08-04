@@ -48,5 +48,6 @@
   "detectionsTitle": "Detections:",
   "locationEnabledDescription": "When location is enabled, it will be used to display the air quality nearby.",
 
-  "selectImageDescription": "Click here and select an image to be analyzed."
+  "selectImageDescription": "Click here and select an image to be analyzed.",
+  "galleryPermissionDenied": "Permission denied. Unable to open gallery."
 }

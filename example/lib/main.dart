@@ -3,8 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:showcaseview/showcaseview.dart';
-import 'package:ultralytics_yolo/yolo.dart';
-import 'package:ultralytics_yolo/yolo_view.dart';
+import 'package:ultralytics_yolo/ultralytics_yolo.dart';
 import 'package:ultralytics_yolo_example/presentation/screens/single_image_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import 'drawer.dart';
@@ -214,7 +213,6 @@ class _YOLODemoState extends State<YOLODemo> with RouteAware{
   bool isLoadingShare = false;
   @override
   Widget build(BuildContext context) {
-    _yoloViewController.setNumItemsThreshold(300);
         return
         Scaffold(
           drawer: const AppDrawer(),
@@ -253,6 +251,9 @@ class _YOLODemoState extends State<YOLODemo> with RouteAware{
                   modelPath: 'yolo11n',
                   task: YOLOTask.detect,
                   controller: _yoloViewController,
+                  streamingConfig: YOLOStreamingConfig.highPerformance(
+
+                  ),
                 ),
               ),
           floatingActionButton: Column(
@@ -270,7 +271,6 @@ class _YOLODemoState extends State<YOLODemo> with RouteAware{
                           isLoading = true;
                         });
                         await _yoloViewController.start();
-                        await _yoloViewController.switchModel('yolo11n', YOLOTask.detect);
                         setState(() {
                           isLoading = false;
                         });

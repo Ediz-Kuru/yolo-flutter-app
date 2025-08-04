@@ -14,12 +14,8 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  intl: any
   flutter_launcher_icons: ^0.14.4
   image_picker: ^0.8.7
-  path_provider: ^2.0.0 # Adjust version as needed
-  archive: ^3.0.0 # Adjust version as needed, for unzipping
-  http: ^1.0.0 # For downloading models
   geolocator: ^10.1.0
   ultralytics_yolo:
     path: ../
@@ -27,7 +23,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   permission_handler: ^12.0.1
   showcaseview: ^4.0.1
-  shared_preferences: ^2.2.2
 
 dev_dependencies:
   integration_test:
