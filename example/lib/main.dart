@@ -271,6 +271,7 @@ class _YOLODemoState extends State<YOLODemo> with RouteAware{
                           isLoading = true;
                         });
                         await _yoloViewController.start();
+                        await _yoloViewController.switchModel('yolo11n', YOLOTask.detect);
                         setState(() {
                           isLoading = false;
                         });
